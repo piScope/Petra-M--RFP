@@ -21,9 +21,9 @@ jobs:
           echo "!!!!!: "$REF
           git checkout $REF
           #
-          export PATH=/opt/python/cp37-cp37m/bin:$PATH
-
-          pip3 install -U wheel six auditwheel twine build setuptools
+          export PATH=/opt/python/cp311-cp311m/bin:$PATH
+	  
+          pip3 install -U wheel six auditwheel twine build setuptools packaging
 
           rm -rf dist/*
           python3 -m build --sdist --wheel --outdir dist/ .
