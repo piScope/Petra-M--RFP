@@ -7,7 +7,7 @@ maintainers = [ { name = "S. Shiraiwa", email = "shiraiwa@princeton.edu" } ]
 keywords = ["scientific computing", "waves in plasmas"]
 readme = "README.md"
 requires-python = ">=3.10"
-version="26.2.1"
+version="26.2.10"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
