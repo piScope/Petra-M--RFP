@@ -1,0 +1,35 @@
+[project]
+name = "petram_rfp"
+license = "GPL-3.0-only"
+description='Plasma wave physics for RF module'
+authors = [ { name = "S. Shiraiwa" } ]
+maintainers = [ { name = "S. Shiraiwa", email = "shiraiwa@princeton.edu" } ]
+keywords = ["scientific computing", "waves in plasmas"]
+readme = "README.md"
+requires-python = ">=3.10"
+version="26.2.1"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "petram_rf >= 26.1.0"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/PetraM_RF"
+"Download" = "https://github.com/PetraM_RF"
+
+[build-system]
+requires = [
+        "setuptools>=80.0.1",
+        "pip>=25.1.0", 
+]
+
+[tool.setuptools]
+# ...
+package-dir = {"" = "python"}
