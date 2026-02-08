@@ -24,6 +24,7 @@ jobs:
           export PATH=/opt/python/cp311-cp311m/bin:$PATH
 
           pip3 install -U wheel six auditwheel twine build setuptools packaging
+          pip3 list
 
           rm -rf dist/*
           python3 -m build --sdist --wheel --outdir dist/ .
