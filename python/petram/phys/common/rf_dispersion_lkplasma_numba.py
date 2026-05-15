@@ -11,17 +11,29 @@
       charges : ion charges (C/1.6e-19)
 
  (sample run)
-    >>> nperp,npara,denses,masses,charges,temps,ne,Te,Bmang,w,nhrms=(40.,10.,[5.e19,5.e18],[2*Da,Da],[1, 1],[15e3,15e3],5.e19,10e3,0.5,3e7*2*3.1415926,20)
-    >>> from petram.phys.common.rf_dispersion_lkplasma_numba import epsilonr_pl_hot_std
-    >>> epsilonr_pl_hot_std(w,np.array(B),np.array(temps),np.array(denses),np.array(masses),np.array(charges),Te,ne,npara,nperp,nhrms)
+    from numpy import pi, array, int32
+    from petram.phys.phys_const import Da
 
+    nperp = 40.
+    npara = 10.
+    denses = array([5e19, 5e18])
+    masses = array([2*Da,Da])
+    charges = array([1, 1], dtype=int32)
+    temps = array([15e3,15e3])
+    ne = 5e19
+    Te = 10e3
+    B = array([0, 0, 0.5])
+    w = 30e6*2*pi
+    nhrms = int32(20)
+    terms = array([int32(1)]*24).reshape(-1,8)
+    use_eye3 = int32(1)
 
-array([[-1.56316016e+03+1.23807373e+01j, -1.12033076e+01-9.84907588e+03j,
-        -1.22779569e+01-8.12259897e-01j],
-       [ 1.12033076e+01+9.84907588e+03j, -2.06928780e+03+9.04122672e+02j,
-         2.66395405e+04-2.17944393e+04j],
-       [-1.22779569e+01-8.12259897e-01j, -2.66395405e+04+2.17944393e+04j,
-         1.29769916e+06+1.58788920e+06j]])
+    from petram.phys.common.rf_dispersion_lkplasma_numba import epsilonr_pl_hot_std
+
+    eps = epsilonr_pl_hot_std(w, B, temps, denses, masses, charges,
+                              Te ,ne, npara, nperp, nhrms,
+                              terms, use_eye3)
+
 
 '''
 import logging
