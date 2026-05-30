@@ -189,6 +189,8 @@ def chi_ions(nperp, npar, ni, A, Z, ti_kev, Bmagn, freq, nharm):
     vt = vti(ti_kev, A)
     zeta_i = 1.0 / (npar * vt) * (1.0 - nharm * w_ci)
     pl_z = zfunc(zeta_i)
+    if npar < 0:
+        pl_z = pl_z.real - 1j*pl_z.imag
 
     An = 1.0 / (om(freq) * npar * vt) * pl_z
     Bn = clight / (om(freq) * npar) * (1.0 + zeta_i * pl_z)
@@ -224,6 +226,8 @@ def chi_el(nperp, npar, ne, te_kev, Bmagn, freq, nharm):
     vt = vte(te_kev)
     zeta_e = 1.0 / (npar * vt) * (1.0 - nharm * w_ce)
     pl_z = zfunc(zeta_e)
+    if npar < 0:
+        pl_z = pl_z.real - 1j*pl_z.imag
 
     # An = 1/kpara/vth * Z
     # Bn = 1/kpara * (1 + zeta*Z)
