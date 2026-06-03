@@ -14,7 +14,7 @@ z_func_cd = np.array([(1.5286514261986445e-05+0.0001338198102574673j, 1.71640018
                       (-4.112237248224732-0.17403327041934671j, 0.014033476202404027-1.496503032385095j),])
 
 
-@njit(complex128(float64))
+@njit([complex128(float64), complex128(complex128)])
 def zfunc(x):
     '''
     Rational approximation of 1j* np.sqrt(np.pi)*wofz(z) using 10 poles
