@@ -230,7 +230,7 @@ def epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
         else:
             S, P, D = SPD_el(w, b_norm, ne, nu_eis)
         S, P, D = adjust_terms(S, P, D, terms[icount, :])
-        M2 = array([[S, -1j*D, 0j], [1j*D, S, 0j], [0., 0., P]])
+        M2 = array([[S, -1j*D, 0j], [1j*D, S, 0j], [0., 0j, P]])
         M += M2
 
     icount = 1
@@ -246,7 +246,7 @@ def epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
 
             # S, P, D = SPD_ion(w, b_norm, dens, mass, charge, nu_ei)
             S, P, D = adjust_terms(S, P, D, terms[icount, :])
-            M2 = array([[S, -1j*D, 0j], [1j*D, S, 0j], [0., 0., P]])
+            M2 = array([[S, -1j*D, 0j], [1j*D, S, 0j], [0., 0j, P]])
             M += M2
 
         icount = icount + 1
