@@ -107,12 +107,12 @@ class EM3D_ColdPlasma(EM3D_Domain):
         col_model = self.col_model
 
         from petram.phys.common.rf_dispersion_coldplasma import build_coefficients
-        coeff1, coeff2, coeff3, coeff5 = build_coefficients(ind_vars, omega, B, dens_e, t_e,
-                                                                    dens_i, masses, charges, col_model, cnorm,
-                                                                    self._global_ns, self._local_ns,
-                                                                    sdim=3, terms=self.stix_terms)
+        coeff1, coeff2, coeff3 = build_coefficients(ind_vars, omega, B, dens_e, t_e,
+                                                    dens_i, masses, charges, col_model, cnorm,
+                                                    self._global_ns, self._local_ns,
+                                                    sdim=3, terms=self.stix_terms)
 
-        return coeff1, coeff2, coeff3, coeff5
+        return coeff1, coeff2, coeff3
 
     def has_bf_contribution(self, kfes):
         if kfes == 0:
@@ -128,7 +128,7 @@ class EM3D_ColdPlasma(EM3D_Domain):
         else:
             dprint1("Add BF contribution(imag)" + str(self._sel_index))
 
-        coeff1, coeff2, coeff3, _coeff_nuei = self.jited_coeff
+        coeff1, coeff2, coeff3 = self.jited_coeff
         self.set_integrator_realimag_mode(real)
 
         if self.has_pml():

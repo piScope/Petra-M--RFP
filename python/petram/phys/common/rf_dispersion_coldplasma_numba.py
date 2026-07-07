@@ -40,10 +40,10 @@ def print_mat(mat, r, c):
             print(mat[i, j])
 
 
-@njit(complex128[:](float64, float64, float64, float64[:]))
+@njit(complex128[:](float64, float64, float64, float64))
 def SPD_el(w, Bnorm, dens, nu_eis):
 
-    mass_eff = (1 + sum(1j*nu_eis/w))*me
+    mass_eff = (1 + 1j*nu_eis/w)*me
 
     wp2 = dens * q_base**2/(mass_eff*e0)
     wc = qe * Bnorm/mass_eff
@@ -106,29 +106,40 @@ def SPD_ion_b(w, Bnorm, dens, mass, charge, wcol):
     return array([Sterm, Pterm, Dterm])
 
 
-@njit(float64[:](float64[:], iarray_ro, float64, float64))
-def f_collisions(denses, charges, Te, ne):
+@njit(float64[:](float64[:], darray_ro, iarray_ro, float64, float64))
+def f_collisions(denses, masses, charges, Te, ne):
     '''
-    electron-ion collision
+    collisions
     '''
-    nu_eis = zeros(len(charges))
+    nus = zeros(len(charges)+1)
     if ne == 0:
-        return nu_eis
+        return nus
 
     vt_e = sqrt(2*Te*q_base/me)
     LAMBDA = 1+12*pi*(e0*Te*q_base)**(3./2)/(q_base**3 * sqrt(ne))
 
+    # electron-ion (electrons scattered by ions)
     for k in range(len(charges)):
         ni = denses[k]
         qi = charges[k]*q_base
         nu_ei = (qi**2 * qe**2 * ni *
                  log(LAMBDA)/(4 * pi*e0**2*me**2)/vt_e**3)
-        nu_eis[k] = nu_ei
-    return nu_eis
+        nus[k+1] = nu_ei
+    nus[0] = np.sum(nus)
+
+    # ion_electrons (ions scattered by electrons)
+    for k in range(len(charges)):
+        ni = denses[k]
+        qi = charges[k]*q_base
+        nu_is = (qi**2 * qe**2 * ni *
+                 log(LAMBDA)/(4 * pi*e0**2*me**2)/vt_e**3)*me/masses[k]
+        nus[k+1] = nu_is
+    
+    return nus
 
 
-@njit(complex128[:, ::1](float64, float64[:], float64[:], darray_ro, iarray_ro, float64, float64, int32))
-def epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
+@njit(complex128[:, ::1](float64, float64[:], float64[:], darray_ro, iarray_ro, float64[:], float64, int32))
+def _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
     b_norm = sqrt(B[0]**2+B[1]**2+B[2]**2)
 
     S = 1 + 0j
@@ -136,34 +147,38 @@ def epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
     D = 0j
 
     if col_model in [1, 3]:
-        nu_eis = f_collisions(denses, charges, Te, ne)
+        nu_eis = f_collisions(denses, masses, charges, Te[0], ne)
+    elif col_model == 2:
+        nu_eis = Te
     else:
-        nu_eis = np.array([0.]*len(masses))
+        nu_eis = np.array([0.]*(len(masses)+1))
 
     if ne > 0.:
         if col_model == 0:
             Se, Pe, De = SPD_el_b(w, b_norm, ne, 0.)
         elif col_model == 2 or col_model == 4:
-            wcol = Te
-            Se, Pe, De = SPD_el_b(w, b_norm, ne, wcol)
+            Se, Pe, De = SPD_el_b(w, b_norm, ne, nu_eis[0])
         else:
-            Se, Pe, De = SPD_el(w, b_norm, ne, nu_eis)
+            Se, Pe, De = SPD_el(w, b_norm, ne, nu_eis[0])
+
         S += Se
         P += Pe
         D += De
 
-    for dens, mass, charge, nu_ei in zip(denses, masses, charges, nu_eis):
+    for dens, mass, charge, nu_ei in zip(denses, masses, charges, nu_eis[1:]):
         if dens > 0.:
             if col_model == 0:
                 Si, Pi, Di = SPD_ion_b(w, b_norm, dens, mass, charge, 0)
             elif col_model == 2 or col_model == 4:
                 wcol = Te
-                Si, Pi, Di = SPD_ion_b(w, b_norm, dens, mass, charge, wcol)
+                Si, Pi, Di = SPD_ion_b(w, b_norm, dens, mass, charge, nu_ei)
             else:
                 Si, Pi, Di = SPD_ion(w, b_norm, dens, mass, charge, nu_ei)
+
             S += Si
             P += Pi
             D += Di
+
     M = array([[S,   -1j*D, 0j],
                [1j*D, S,    0j],
                [0j,   0j,   P]])
@@ -196,8 +211,8 @@ def adjust_terms(S, P, D, terms):
 
 
 @njit(complex128[:, ::1](float64, float64[:], float64[:], darray_ro, iarray_ro,
-                         float64, float64, iarray2_ro, int32, int32))
-def epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
+                         float64[:], float64, iarray2_ro, int32, int32))
+def _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
                        use_eye3, col_model):
     '''
     generalized Stix tensor
@@ -207,9 +222,11 @@ def epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
 
     b_norm = sqrt(B[0]**2+B[1]**2+B[2]**2)
     if col_model in [1, 3]:
-        nu_eis = f_collisions(denses, charges, Te, ne)
+        nu_eis = f_collisions(denses, masses, charges, Te[0], ne)
+    elif col_model == 2:
+        nu_eis = Te
     else:
-        nu_eis = np.array([0.]*len(masses))
+        nu_eis = np.array([0.]*(len(masses)+1))
 
     if use_eye3:
         M = array([[1.+0j,   0., 0.],
@@ -226,21 +243,21 @@ def epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
             S, P, D = SPD_el_b(w, b_norm, ne, 0.)
         elif col_model == 2 or col_model == 4:
             wcol = Te
-            S, P, D = SPD_el_b(w, b_norm, ne, wcol)
+            S, P, D = SPD_el_b(w, b_norm, ne, nu_eis[0])
         else:
-            S, P, D = SPD_el(w, b_norm, ne, nu_eis)
+            S, P, D = SPD_el(w, b_norm, ne, nu_eis[0])
+
         S, P, D = adjust_terms(S, P, D, terms[icount, :])
         M2 = array([[S, -1j*D, 0j], [1j*D, S, 0j], [0., 0j, P]])
         M += M2
 
     icount = 1
-    for dens, mass, charge, nu_ei in zip(denses, masses, charges, nu_eis):
+    for dens, mass, charge, nu_ei in zip(denses, masses, charges, nu_eis[1:]):
         if dens > 0.:
             if col_model == 0:
                 S, P, D = SPD_ion_b(w, b_norm, dens, mass, charge, 0.0)
             elif col_model == 2 or col_model == 4:
-                wcol = Te
-                S, P, D = SPD_ion_b(w, b_norm, dens, mass, charge, wcol)
+                S, P, D = SPD_ion_b(w, b_norm, dens, mass, charge, nu_ei)
             else:
                 S, P, D = SPD_ion(w, b_norm, dens, mass, charge, nu_ei)
 
@@ -252,6 +269,44 @@ def epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
         icount = icount + 1
 
     return M
+
+#
+#  overload two functions so that Te/nu can be either array or single value.
+#
+def epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
+    pass
+def epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
+                       use_eye3, col_model):
+    pass
+
+from numba.extending import overload
+@overload(epsilonr_pl_cold_std)
+def jit_std(w, B, denses, masses, charges, Te, ne, col_model):
+    if isinstance(Te, types.Array):
+        def array_impl(w, B, denses, masses, charges, Te, ne, col_model):
+            return _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model)
+        return array_impl
+        
+    # Check if input is a primitive numeric type
+    elif isinstance(Te, (types.Integer, types.Float)):
+        def scalar_impl(w, B, denses, masses, charges, Te, ne, col_model):
+            Te = np.zeros((13,), dtype=np.float64) + Te
+            return _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model)
+        return scalar_impl
+
+@overload(epsilonr_pl_cold_g)    
+def jit_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+    if isinstance(Te, types.Array):
+        def array_impl(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+            return _epsilonr_pl_cold_g(w, B, denses, masses, charges, Tes, ne, terms, use_eye3, col_model)
+        return array_impl
+        
+    # Check if input is a primitive numeric type
+    elif isinstance(Te, (types.Integer, types.Float)):
+        def scalar_impl(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+            Te = np.zeros((13,), dtype=np.float64) + Te
+            return _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model)
+        return scalar_impl
 
 
 @njit(complex128[:, :](float64[:], complex128[:, :]))
@@ -286,36 +341,6 @@ def rotate_dielectric(B, M):
     ph = arctan2(B[0]*cos(th)+B[1]*sin(th), B[2])
     A = dot(R1(ph), dot(M, R1(-ph)))
     ans = dot(R2(th), dot(A, R2(-th)))
-
-    #
-    # alternative: rotate ez to match with B
-    #  ans2 below agrees with ans
-    #
-    '''
-    def rot_mat(ax, th):
-        mat = array([[ax[0]**2*(1-cos(th))+cos(th),  ax[0]*ax[1]*(1-cos(th))-ax[2]*sin(th), ax[0]*ax[2]*(1-cos(th))+ax[1]*sin(th)],
-                     [ax[0]*ax[1]*(1-cos(th))+ax[2]*sin(th), ax[1]**2*(1-cos(th))+cos(th),  ax[1]*ax[2]*(1-cos(th))-ax[0]*sin(th)],
-                     [ax[0]*ax[2]*(1-cos(th))-ax[1]*sin(th), ax[1]*ax[2]*(1-cos(th))+ax[0]*sin(th), ax[2]**2*(1-cos(th))+cos(th)]],
-                 dtype=complex128)
-        return mat
-    #
-    ez = array([0, 0, 1.0])
-    bn = B/sqrt(B[0]**2 + B[1]**2 + B[2]**2)
-    ax = cross(bn, ez)
-    # # if bn // ez don't do anything
-    if sqrt(sum(ax**2)) < 1e-7:
-         ans2 = M
-    else:
-        ax = ax/sqrt(sum(ax**2))
-        ay = cross(ax, bn)
-        th = arctan2(sum(ez*ay), sum(ez*bn))
-        mata = rot_mat(ax, th)
-        matb = rot_mat(ax, -th)
-        ans2 = dot(matb, dot(M, mata))
-
-    print(np.sum(np.abs(ans-ans2)))
-    '''
-    # print(ans, ans2)
 
     return ans
 

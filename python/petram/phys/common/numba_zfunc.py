@@ -27,5 +27,5 @@ def zfunc(x):
         for c, d in z_func_cd:
             value = value + c / (x - d)
 
-    return np.real(value) + 1j* np.sqrt(np.pi)*np.exp(-x**2)
+    return np.real(value) + 1j* np.sqrt(np.pi)*np.exp(-x.real**2)
     #return value
