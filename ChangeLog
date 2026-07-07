@@ -1,0 +1,13 @@
+        <<< Change Log >>>
+07/07/2026
+	* improved cold plasma collision model. One can directly specify array
+	of collision frequecies for electrons and ions.
+
+	** w/o col. : no collision
+	** Tc : collision frequency is computed by using Tc as electron temperature
+	** nu_col : directly setting nu_col for all species
+	** nu_col(array) : setting nu_cols indpendently for each species. Must be array
+	                   size of 1 + number of ions. First element is for electrons.
+
+02/10/2026
+	* created from PetraM-RF module by separating RF physics for plasma waves

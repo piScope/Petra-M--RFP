@@ -134,7 +134,7 @@ def f_collisions(denses, masses, charges, Te, ne):
         nu_is = (qi**2 * qe**2 * ni *
                  log(LAMBDA)/(4 * pi*e0**2*me**2)/vt_e**3)*me/masses[k]
         nus[k+1] = nu_is
-    
+
     return nus
 
 
@@ -146,9 +146,9 @@ def _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
     P = 1 + 0j
     D = 0j
 
-    if col_model in [1, 3]:
+    if col_model == 1:
         nu_eis = f_collisions(denses, masses, charges, Te[0], ne)
-    elif col_model == 2:
+    elif col_model in (2, 3):
         nu_eis = Te
     else:
         nu_eis = np.array([0.]*(len(masses)+1))
@@ -169,7 +169,7 @@ def _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
         if dens > 0.:
             if col_model == 0:
                 Si, Pi, Di = SPD_ion_b(w, b_norm, dens, mass, charge, 0)
-            elif col_model == 2 or col_model == 4:
+            elif col_model == 2 or col_model == 3:
                 wcol = Te
                 Si, Pi, Di = SPD_ion_b(w, b_norm, dens, mass, charge, nu_ei)
             else:
@@ -183,8 +183,6 @@ def _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
                [1j*D, S,    0j],
                [0j,   0j,   P]])
 
-    if col_model == 3 or col_model == 4:
-        M = 0.5 * (M - M.conj().transpose())
     return M
 
 
@@ -221,9 +219,9 @@ def _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
     '''
 
     b_norm = sqrt(B[0]**2+B[1]**2+B[2]**2)
-    if col_model in [1, 3]:
+    if col_model == 1:
         nu_eis = f_collisions(denses, masses, charges, Te[0], ne)
-    elif col_model == 2:
+    elif col_model in (2, 3):
         nu_eis = Te
     else:
         nu_eis = np.array([0.]*(len(masses)+1))
@@ -241,7 +239,7 @@ def _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
     if ne > 0.:
         if col_model == 0:
             S, P, D = SPD_el_b(w, b_norm, ne, 0.)
-        elif col_model == 2 or col_model == 4:
+        elif col_model == 2 or col_model == 3:
             wcol = Te
             S, P, D = SPD_el_b(w, b_norm, ne, nu_eis[0])
         else:
@@ -256,7 +254,7 @@ def _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
         if dens > 0.:
             if col_model == 0:
                 S, P, D = SPD_ion_b(w, b_norm, dens, mass, charge, 0.0)
-            elif col_model == 2 or col_model == 4:
+            elif col_model == 2 or col_model == 3:
                 S, P, D = SPD_ion_b(w, b_norm, dens, mass, charge, nu_ei)
             else:
                 S, P, D = SPD_ion(w, b_norm, dens, mass, charge, nu_ei)
@@ -286,7 +284,7 @@ def jit_std(w, B, denses, masses, charges, Te, ne, col_model):
         def array_impl(w, B, denses, masses, charges, Te, ne, col_model):
             return _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model)
         return array_impl
-        
+
     # Check if input is a primitive numeric type
     elif isinstance(Te, (types.Integer, types.Float)):
         def scalar_impl(w, B, denses, masses, charges, Te, ne, col_model):
@@ -294,13 +292,13 @@ def jit_std(w, B, denses, masses, charges, Te, ne, col_model):
             return _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model)
         return scalar_impl
 
-@overload(epsilonr_pl_cold_g)    
+@overload(epsilonr_pl_cold_g)
 def jit_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
     if isinstance(Te, types.Array):
         def array_impl(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
-            return _epsilonr_pl_cold_g(w, B, denses, masses, charges, Tes, ne, terms, use_eye3, col_model)
+            return _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model)
         return array_impl
-        
+
     # Check if input is a primitive numeric type
     elif isinstance(Te, (types.Integer, types.Float)):
         def scalar_impl(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
@@ -345,8 +343,11 @@ def rotate_dielectric(B, M):
     return ans
 
 
-@njit(complex128[:, :](float64, float64[:], float64[:], darray_ro, iarray_ro, float64, float64, int32))
-def epsilonr_pl_cold(w, B, denses, masses, charges, Te, ne, col_model):
+#
+# epsilonr with rotation
+#
+@njit(complex128[:, :](float64, float64[:], float64[:], darray_ro, iarray_ro, float64[:], float64, int32))
+def _epsilonr_pl_cold(w, B, denses, masses, charges, Te, ne, col_model):
     '''
     standard SPD stix
     '''
@@ -354,8 +355,8 @@ def epsilonr_pl_cold(w, B, denses, masses, charges, Te, ne, col_model):
     return rotate_dielectric(B, M)
 
 
-@njit(complex128[:, :](float64, float64[:], float64[:], darray_ro, iarray_ro, float64, float64, iarray2_ro, int32, int32))
-def epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+@njit(complex128[:, :](float64, float64[:], float64[:], darray_ro, iarray_ro, float64[:], float64, iarray2_ro, int32, int32))
+def _epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
     '''
     standard SPD stix
     '''
@@ -363,6 +364,42 @@ def epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_e
                            charges, Te, ne, terms, use_eye3, col_model)
 
     return rotate_dielectric(B, M)
+
+def epsilonr_pl_cold(w, B, denses, masses, charges, Te, ne, col_model):
+    pass
+
+def epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+    pass
+
+
+@overload(epsilonr_pl_cold)
+def jit_std_r(w, B, denses, masses, charges, Te, ne, col_model):
+    if isinstance(Te, types.Array):
+        def array_impl(w, B, denses, masses, charges, Te, ne, col_model):
+            return _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model)
+        return array_impl
+
+    # Check if input is a primitive numeric type
+    elif isinstance(Te, (types.Integer, types.Float)):
+        def scalar_impl(w, B, denses, masses, charges, Te, ne, col_model):
+            Te = np.zeros((13,), dtype=np.float64) + Te
+            return _epsilonr_pl_cold(w, B, denses, masses, charges, Te, ne, col_model)
+        return scalar_impl
+
+@overload(epsilonr_pl_cold_generic)
+def jit_g_r(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+    if isinstance(Te, types.Array):
+        def array_impl(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+            return _epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model)
+        return array_impl
+
+    # Check if input is a primitive numeric type
+    elif isinstance(Te, (types.Integer, types.Float)):
+        def scalar_impl(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+            Te = np.zeros((13,), dtype=np.float64) + Te
+            return _epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model)
+        return scalar_impl
+
 
 
 # back to the original log level

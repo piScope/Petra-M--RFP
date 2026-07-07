@@ -46,7 +46,7 @@ vtable_data0 = [('B', VtableElement('bext', type='array',
                                                  guilabel='ion temps.(eV)',
                                                  default="100., 100",
                                                  tip="ion temperatures")),
-                ('temperatures_c', VtableElement('temperatures_c', type='float',
+                ('temperatures_c', VtableElement('temperatures_c', type='array',
                                                  guilabel='Tc(ev) or ' +
                                                  nu_txt+'_col(1/s)',
                                                  default="100.",
@@ -173,7 +173,7 @@ def make_functions(terms, cnorm):
             # eps = e_colda + e_hot
 
             # add collisional abs. based on hot hermitan * nuei
-            nuei = sum(f_collisions(dens_i, charges, t_e, dens_e))
+            nuei = sum(f_collisions(dens_i, masses, charges, t_e, dens_e))
             e_hot_col = 1j*(e_hot + e_hot.transpose().conj()) / \
                 2.0 * nuei/omega
             eps = e_hot + e_hot_col
@@ -237,7 +237,7 @@ def make_function_variable(terms):
             # eps = e_colda + e_hot
 
             # add collisional abs. based on hot hermitan * nuei
-            nuei = sum(f_collisions(dens_i, charges, t_e, dens_e))
+            nuei = sum(f_collisions(dens_i, masses, charges, t_e, dens_e))
             e_hot_col = 1j*(e_hot + e_hot.transpose().conj()) / \
                 2.0 * nuei/omega
             eps = e_hot + e_hot_col
@@ -288,7 +288,7 @@ def make_function_variable(terms):
     def nuei(*_ptx, dens_e=None, t_e=None, dens_i=None):
         from petram.phys.common.rf_dispersion_coldplasma_numba import f_collisions
         # iidx : index of ions
-        nuei = f_collisions(dens_i, charges, t_e, dens_e)
+        nuei = f_collisions(dens_i, masses, charges, t_e, dens_e)
         return nuei[iidx]
 
     def epsilonrac(*ptx, B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
@@ -468,14 +468,22 @@ def build_coefficients(ind_vars, omega, B, t_c, dens_e, t_e, dens_i, t_i,
     l = l_ns
     g = g_ns
 
+    col_model = col_model_options.index(col_model)    
+
     B_coeff = VCoeff(3, [B], ind_vars, l, g,
                      return_complex=False, return_mfem_constant=True)
     dens_e_coeff = SCoeff([dens_e, ], ind_vars, l, g,
                           return_complex=False, return_mfem_constant=True)
     t_e_coeff = SCoeff([t_e, ], ind_vars, l, g,
                        return_complex=False, return_mfem_constant=True)
-    t_c_coeff = SCoeff([t_c, ], ind_vars, l, g,
+
+    if col_model == 3:
+        t_c_coeff = VCoeff(num_ions+1, [t_c, ], ind_vars, l, g,
+                           return_complex=False, return_mfem_constant=True, from_array=True)
+    else:
+        t_c_coeff = SCoeff([t_c, ], ind_vars, l, g,
                        return_complex=False, return_mfem_constant=True)
+
     dens_i_coeff = VCoeff(num_ions, [dens_i, ], ind_vars, l, g,
                           return_complex=False, return_mfem_constant=True)
     t_i_coeff = VCoeff(num_ions, [t_i, ], ind_vars, l, g,
@@ -489,7 +497,7 @@ def build_coefficients(ind_vars, omega, B, t_c, dens_e, t_e, dens_i, t_i,
     kpe_alg = getattr(
         petram.phys.common.rf_dispersion_lkplasma_numba, "eval_kpe_"+kpe_alg)
 
-    col_model = col_model_options.index(col_model)
+
 
     params = {'omega': omega, 'masses': masses, 'charges': charges, 'nhrms': 20,
               'c': speed_of_light, 'kpe_mode': kpe_options.index(kpe_mode), "kpe_alg": kpe_alg,

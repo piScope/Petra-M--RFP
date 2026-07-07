@@ -53,7 +53,7 @@ stix_options = ["S(xx/yy)", "D(xy/yx)", "P(zz)",
                 "Prop.(H)", "Abs.(A)"]
 default_stix_option = [(x, True) for x in stix_options[:]]
 
-col_model_options = ["w/o col.", "Tc", nu_txt+"_col", ]
+col_model_options = ["w/o col.", "Tc", nu_txt+"_col", nu_txt+"_col(array)" ]
 default_col_model = col_model_options[1]
 
 #
@@ -177,16 +177,24 @@ def build_coefficients(ind_vars, omega, B, dens_e, t_e, dens_i, masses, charges,
     l = l_ns
     g = g_ns
 
+    col_model = col_model_options.index(col_model)
+
     B_coeff = VCoeff(3, [B], ind_vars, l, g,
                      return_complex=False, return_mfem_constant=True)
     dens_e_coeff = SCoeff([dens_e, ], ind_vars, l, g,
                           return_complex=False, return_mfem_constant=True)
-    t_e_coeff = SCoeff([t_e, ], ind_vars, l, g,
+
+    if col_model == 3:
+        t_e_coeff = VCoeff(num_ions+1, [t_e, ], ind_vars, l, g,
                        return_complex=False, return_mfem_constant=True)
+    else:
+        t_e_coeff = SCoeff([t_e, ], ind_vars, l, g,
+                           return_complex=False, return_mfem_constant=True, from_array=True)
+
     dens_i_coeff = VCoeff(num_ions, [dens_i, ], ind_vars, l, g,
                           return_complex=False, return_mfem_constant=True)
 
-    col_model = col_model_options.index(col_model)
+
     terms = value2flags(len(charges), terms)
     params = {'omega': omega, 'masses': masses, 'charges': charges,
               'col_model': col_model,
@@ -308,13 +316,6 @@ def build_variables(solvar, ss, ind_vars, omega, B, dens_e, t_e, dens_i, masses,
             omega, B, dens_i, masses, charges, t_e, dens_e, sterms, use_eye3, col_model)
         return (out - out.transpose().conj())/2.0
 
-    if col_model > 2:
-        def mur(*_ptx):
-            return 100000.*mu0*np.eye(3, dtype=np.complex128)
-    else:
-        def mur(*_ptx):
-            return mu0*np.eye(3, dtype=np.complex128)
-
     if np.int32(terms[0]):
         def mur(*_ptx):
             return mu0*np.eye(3, dtype=np.complex128)
@@ -325,11 +326,22 @@ def build_variables(solvar, ss, ind_vars, omega, B, dens_e, t_e, dens_i, masses,
     def sigma(*_ptx):
         return - 1j*omega * np.zeros((3, 3), dtype=np.complex128)
 
-    def nuei(*_ptx, B=None, dens_e=None, t_e=None, dens_i=None):
+    def nucols(*_ptx, B=None, dens_e=None, t_e=None, dens_i=None):
         from petram.phys.common.rf_dispersion_coldplasma_numba import f_collisions
+        print("col_model", col_model)
+        if col_model == 3:
+            nucols = t_e
+        elif col_model == 2:
+            t_e = np.atleast_1d(t_e)[0]
+            nucols = np.zeros((len(masses)+1,))+t_e
+        elif col_model == 1:
+            t_e = np.atleast_1d(t_e)[0]
+            print("here", t_e)
+            nucols = f_collisions(dens_i, masses, charges, t_e, dens_e)
+        else:
+            nucols = np.zeros((len(masses)+1,))
+        return nucols
 
-        nuei = f_collisions(dens_i, masses, charges, t_e, dens_e)
-        return nuei
 
     def fce(*_ptx, B=None, dens_e=None, t_e=None, dens_i=None):
         from petram.phys.common.rf_plasma_wc_wp import wce
@@ -393,8 +405,8 @@ def build_variables(solvar, ss, ind_vars, omega, B, dens_e, t_e, dens_i, masses,
                           params=params)(sigma)
     var4 = variable.array(complex=True, shape=(3, 3),
                           dependency=dependency, params=params)(sdp)
-    var5 = variable.array(complex=True, shape=(len(masses),),
-                          dependency=dependency, params=params)(nuei)
+    var5 = variable.array(complex=True, shape=(len(masses)+1,),
+                          dependency=dependency, params=params)(nucols)
     var6 = variable.array(complex=True, shape=(3, 3),
                           dependency=dependency, params=params)(epsilonrac)
 
@@ -416,7 +428,7 @@ def add_domain_variables_common(obj, ret, v, suffix, ind_vars):
     v["_m_"+ss] = ret[1]
     v["_s_"+ss] = ret[2]
     v["_spd_"+ss] = ret[3]
-    v["_nuei_"+ss] = ret[4]
+    v["_nucol_"+ss] = ret[4]
     v["_eac_"+ss] = ret[5]
     v["_fce_"+ss] = ret[6]
     v["_fci_"+ss] = ret[7]
@@ -441,7 +453,7 @@ def add_domain_variables_common(obj, ret, v, suffix, ind_vars):
                            'mur', ["_m_"+ss + "/mu0"])
     obj.do_add_matrix_expr(v, suffix, ind_vars, 'sigma', [
         "_s_"+ss + "/(-1j*omega)"])
-    obj.do_add_matrix_expr(v, suffix, ind_vars, 'nuei', ["_nuei_"+ss])
+    obj.do_add_matrix_expr(v, suffix, ind_vars, 'nucol', ["_nucol_"+ss])
     obj.do_add_matrix_expr(v, suffix, ind_vars,
                            'Sstix', ["_spd_"+ss+"[0,0]"])
     obj.do_add_matrix_expr(v, suffix, ind_vars, 'Dstix', [
