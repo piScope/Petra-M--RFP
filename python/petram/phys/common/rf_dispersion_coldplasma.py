@@ -328,7 +328,6 @@ def build_variables(solvar, ss, ind_vars, omega, B, dens_e, t_e, dens_i, masses,
 
     def nucols(*_ptx, B=None, dens_e=None, t_e=None, dens_i=None):
         from petram.phys.common.rf_dispersion_coldplasma_numba import f_collisions
-        print("col_model", col_model)
         if col_model == 3:
             nucols = t_e
         elif col_model == 2:
@@ -336,7 +335,6 @@ def build_variables(solvar, ss, ind_vars, omega, B, dens_e, t_e, dens_i, masses,
             nucols = np.zeros((len(masses)+1,))+t_e
         elif col_model == 1:
             t_e = np.atleast_1d(t_e)[0]
-            print("here", t_e)
             nucols = f_collisions(dens_i, masses, charges, t_e, dens_e)
         else:
             nucols = np.zeros((len(masses)+1,))
