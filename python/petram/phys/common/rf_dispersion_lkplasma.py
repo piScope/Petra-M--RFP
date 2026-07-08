@@ -181,6 +181,7 @@ def make_functions(terms, cnorm):
         out = -epsilon0 * omega * omega * eps
         out = rotate_dielectric(B, kpe, out)
 
+        print(out, cnorm)
         return out/cnorm
 
 
@@ -285,11 +286,19 @@ def make_function_variable(terms):
     def sigma(*_ptx):
         return - 1j*omega * np.zeros((3, 3), dtype=np.complex128)
 
-    def nuei(*_ptx, dens_e=None, t_e=None, dens_i=None):
+    def nucol(*_ptx, dens_e=None, t_e=None, dens_i=None):
         from petram.phys.common.rf_dispersion_coldplasma_numba import f_collisions
-        # iidx : index of ions
-        nuei = f_collisions(dens_i, masses, charges, t_e, dens_e)
-        return nuei[iidx]
+        if col_model == 3:
+            nucols = t_e
+        elif col_model == 2:
+            t_e = np.atleast_1d(t_e)[0]
+            nucols = np.zeros((len(masses)+1,))+t_e
+        elif col_model == 1:
+            t_e = np.atleast_1d(t_e)[0]
+            nucols = f_collisions(dens_i, masses, charges, t_e, dens_e)
+        else:
+            nucols = np.zeros((len(masses)+1,))
+        return nucols
 
     def epsilonrac(*ptx, B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
         from petram.phys.common.rf_dispersion_coldplasma_numba import epsilonr_pl_cold_std
@@ -450,7 +459,7 @@ def make_function_variable(terms):
 
         return fpi
 
-    return (epsilonr, sdp, mur, sigma, nuei, epsilonrac, epsilonrae,
+    return (epsilonr, sdp, mur, sigma, nucol, epsilonrac, epsilonrae,
             epsilonrai, npape, sdphot, fce, fci, fpe, fpi, lkframe)
 
 
@@ -479,10 +488,12 @@ def build_coefficients(ind_vars, omega, B, t_c, dens_e, t_e, dens_i, t_i,
 
     if col_model == 3:
         t_c_coeff = VCoeff(num_ions+1, [t_c, ], ind_vars, l, g,
-                           return_complex=False, return_mfem_constant=True, from_array=True)
+                           return_complex=False, return_mfem_constant=True)
+    elif col_model == 0:
+        t_e_coeff = mfem.ConstantCoefficient(0.0)
     else:
         t_c_coeff = SCoeff([t_c, ], ind_vars, l, g,
-                       return_complex=False, return_mfem_constant=True)
+                       return_complex=False, return_mfem_constant=True, from_array=True)
 
     dens_i_coeff = VCoeff(num_ions, [dens_i, ], ind_vars, l, g,
                           return_complex=False, return_mfem_constant=True)
@@ -593,7 +604,7 @@ def build_variables(solvar, ss, ind_vars, omega, B, t_c, dens_e, t_e, dens_i, t_
               'c': speed_of_light, "kpe_mode": kpe_options.index(kpe_mode),
               'kpe_alg': kpe_alg, 'col_model': col_model, 'lk_terms': terms}
 
-    epsilonr, sdp, mur, sigma, nuei, epsilonrac, epsilonrae, epsilonrai, npape, sdphot, fce, fci, fpe, fpi, lkframe = make_function_variable(
+    epsilonr, sdp, mur, sigma, nucol, epsilonrac, epsilonrae, epsilonrai, npape, sdphot, fce, fci, fpe, fpi, lkframe = make_function_variable(
         terms)
 
     solvar["_B_"+ss] = B_var
@@ -617,7 +628,7 @@ def build_variables(solvar, ss, ind_vars, omega, B, t_c, dens_e, t_e, dens_i, t_
     var4 = variable.array(complex=True, shape=(3, 3),
                           dependency=dependency, params=params)(sdp)
     var5 = variable.array(complex=True, shape=(len(masses),),
-                          dependency=dependency, params=params)(nuei)
+                          dependency=dependency, params=params)(nucol)
 
     var6 = variable.array(complex=True, shape=(3, 3),
                           dependency=dependency, params=params)(epsilonrac)
@@ -651,7 +662,7 @@ def add_domain_variables_common(obj, ret, v, suffix, ind_vars):
     v["_m_"+ss] = ret[1]
     v["_s_"+ss] = ret[2]
     v["_spd_"+ss] = ret[3]
-    v["_nuei_"+ss] = ret[4]
+    v["_nucol_"+ss] = ret[4]
     v["_eac_"+ss] = ret[5]
     v["_eae_"+ss] = ret[6]
     v["_eai_"+ss] = ret[7]
@@ -720,7 +731,7 @@ def add_domain_variables_common(obj, ret, v, suffix, ind_vars):
                            'mur', ["_m_"+ss + "/mu0"])
     obj.do_add_matrix_expr(v, suffix, ind_vars, 'sigma', [
         "_s_"+ss + "/(-1j*omega)"], ["omega"])
-    obj.do_add_matrix_expr(v, suffix, ind_vars, 'nuei', ["_nuei_"+ss])
+    obj.do_add_matrix_expr(v, suffix, ind_vars, 'nucol', ["_nucol_"+ss])
     obj.do_add_matrix_expr(v, suffix, ind_vars,
                            'Sstix', ["_spd_"+ss+"[0,0]"])
     obj.do_add_matrix_expr(v, suffix, ind_vars, 'Dstix', [

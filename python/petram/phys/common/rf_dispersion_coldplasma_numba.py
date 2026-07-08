@@ -217,7 +217,6 @@ def _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
     terms defined in rf_dispersion_coldplasma
        stix_options = ("SDP", "SD", "SP", "DP", "P", "w/o xx", "None")
     '''
-
     b_norm = sqrt(B[0]**2+B[1]**2+B[2]**2)
     if col_model == 1:
         nu_eis = f_collisions(denses, masses, charges, Te[0], ne)
@@ -271,14 +270,15 @@ def _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
 #
 #  overload two functions so that Te/nu can be either array or single value.
 #
-def epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
-    pass
-def epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
+def call_epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
+    assert False, "this should not be called"
+
+def call_epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
                        use_eye3, col_model):
-    pass
+    assert False, "this should not be called"
 
 from numba.extending import overload
-@overload(epsilonr_pl_cold_std)
+@overload(call_epsilonr_pl_cold_std)
 def jit_std(w, B, denses, masses, charges, Te, ne, col_model):
     if isinstance(Te, types.Array):
         def array_impl(w, B, denses, masses, charges, Te, ne, col_model):
@@ -292,7 +292,7 @@ def jit_std(w, B, denses, masses, charges, Te, ne, col_model):
             return _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model)
         return scalar_impl
 
-@overload(epsilonr_pl_cold_g)
+@overload(call_epsilonr_pl_cold_g)
 def jit_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
     if isinstance(Te, types.Array):
         def array_impl(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
@@ -306,6 +306,12 @@ def jit_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
             return _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model)
         return scalar_impl
 
+@njit
+def epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
+    return call_epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model)
+@njit
+def epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+    return call_epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model)
 
 @njit(complex128[:, :](float64[:], complex128[:, :]))
 def rotate_dielectric(B, M):
@@ -365,14 +371,13 @@ def _epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_
 
     return rotate_dielectric(B, M)
 
-def epsilonr_pl_cold(w, B, denses, masses, charges, Te, ne, col_model):
-    pass
+def call_epsilonr_pl_cold(w, B, denses, masses, charges, Te, ne, col_model):
+    assert False, "this should not be called"
 
-def epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
-    pass
+def call_epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+    assert False, "this should not be called"
 
-
-@overload(epsilonr_pl_cold)
+@overload(call_epsilonr_pl_cold)
 def jit_std_r(w, B, denses, masses, charges, Te, ne, col_model):
     if isinstance(Te, types.Array):
         def array_impl(w, B, denses, masses, charges, Te, ne, col_model):
@@ -386,7 +391,7 @@ def jit_std_r(w, B, denses, masses, charges, Te, ne, col_model):
             return _epsilonr_pl_cold(w, B, denses, masses, charges, Te, ne, col_model)
         return scalar_impl
 
-@overload(epsilonr_pl_cold_generic)
+@overload(call_epsilonr_pl_cold_generic)
 def jit_g_r(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
     if isinstance(Te, types.Array):
         def array_impl(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
@@ -400,6 +405,13 @@ def jit_g_r(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
             return _epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model)
         return scalar_impl
 
+@njit
+def epsilonr_pl_cold(w, B, denses, masses, charges, Te, ne, col_model):
+    return call_epsilonr_pl_cold(w, B, denses, masses, charges, Te, ne, col_model)
+
+@njit
+def epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+    return call_epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model)
 
 
 # back to the original log level
