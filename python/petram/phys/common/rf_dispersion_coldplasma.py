@@ -53,7 +53,7 @@ stix_options = ["S(xx/yy)", "D(xy/yx)", "P(zz)",
                 "Prop.(H)", "Abs.(A)"]
 default_stix_option = [(x, True) for x in stix_options[:]]
 
-col_model_options = ["w/o col.", "Tc", nu_txt+"_col", nu_txt+"_col(array)" ]
+col_model_options = ["w/o col.", "Tc", nu_txt+"_col", nu_txt+"_col[:]"]
 default_col_model = col_model_options[1]
 
 #
@@ -187,6 +187,8 @@ def build_coefficients(ind_vars, omega, B, dens_e, t_e, dens_i, masses, charges,
     if col_model == 3:
         t_e_coeff = VCoeff(num_ions+1, [t_e, ], ind_vars, l, g,
                        return_complex=False, return_mfem_constant=True)
+    elif col_model == 0:
+        t_e_coeff = mfem.ConstantCoefficient(0.0)
     else:
         t_e_coeff = SCoeff([t_e, ], ind_vars, l, g,
                            return_complex=False, return_mfem_constant=True, from_array=True)

@@ -142,7 +142,7 @@ class EM2Da_ColdPlasma(EM2Da_Domain):
                                                     self._global_ns, self._local_ns,
                                                     sdim=2, terms=self.stix_terms)
 
-        return coeff1, coeff2, coeff3, coeff_nuei, tmode
+        return coeff1, coeff2, coeff3, tmode
 
     def add_bf_contribution(self, engine, a, real=True, kfes=0):
         coeff1, coeff2, coeff3, tmode = self.jited_coeff
