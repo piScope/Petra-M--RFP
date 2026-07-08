@@ -282,6 +282,7 @@ from numba.extending import overload
 def jit_std(w, B, denses, masses, charges, Te, ne, col_model):
     if isinstance(Te, types.Array):
         def array_impl(w, B, denses, masses, charges, Te, ne, col_model):
+            Te = Te.astype(np.float64)
             return _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model)
         return array_impl
 
@@ -296,6 +297,7 @@ def jit_std(w, B, denses, masses, charges, Te, ne, col_model):
 def jit_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
     if isinstance(Te, types.Array):
         def array_impl(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+            Te = Te.astype(np.float64)
             return _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model)
         return array_impl
 
@@ -381,6 +383,7 @@ def call_epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, 
 def jit_std_r(w, B, denses, masses, charges, Te, ne, col_model):
     if isinstance(Te, types.Array):
         def array_impl(w, B, denses, masses, charges, Te, ne, col_model):
+            Te = Te.astype(np.float64)
             return _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model)
         return array_impl
 
@@ -395,6 +398,7 @@ def jit_std_r(w, B, denses, masses, charges, Te, ne, col_model):
 def jit_g_r(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
     if isinstance(Te, types.Array):
         def array_impl(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
+            Te = Te.astype(np.float64)
             return _epsilonr_pl_cold_generic(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model)
         return array_impl
 

@@ -28,11 +28,13 @@
     terms = array([int32(1)]*24).reshape(-1,8)
     use_eye3 = int32(1)
 
+    nucol = array([0, 0, 0])  # additional collision frequecy to add anti-hermitian part
+
     from petram.phys.common.rf_dispersion_lkplasma_numba import epsilonr_pl_hot_std
 
     eps = epsilonr_pl_hot_std(w, B, temps, denses, masses, charges,
                               Te ,ne, npara, nperp, nhrms,
-                              terms, use_eye3)
+                              terms, use_eye3, nucol)
 
 
 '''
@@ -308,8 +310,8 @@ def adjust_terms(tmp, terms):
 
 
 @njit(complex128[:, ::1](float64, float64[:], float64[:], float64[:], darray_ro, iarray_ro,
-                         float64, float64, float64, float64, int32, iarray2_ro, int32))
-def epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne, npara, nperp, nhrms, terms, use_eye3):
+                         float64, float64, float64, float64, int32, iarray2_ro, int32, float64[:]))
+def epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne, npara, nperp, nhrms, terms, use_eye3, nucol):
 
     b_norm = sqrt(B[0]**2+B[1]**2+B[2]**2)
     freq = w/2/pi
@@ -334,11 +336,15 @@ def epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne, npara, npe
         M2 = array([[tmp[0], tmp[1], tmp[3]],
                     [-tmp[1], tmp[2], tmp[4]],
                     [tmp[3], -tmp[4], tmp[5]], ])
-
         M += M2
+
+        M2a = 1j*(M2 + M2.transpose().conj()) / \
+                2.0 * nucol[0]/w
+        M += M2a
+
     icount += 1
 
-    for Ti, dens, mass, charge in zip(temps, denses, masses, charges):
+    for Ti, dens, mass, charge, nuc in zip(temps, denses, masses, charges, nucol[1:]):
         ti_kev = Ti/1000.
         A = mass/Da
         Z = charge
@@ -357,8 +363,11 @@ def epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne, npara, npe
         M2 = array([[tmp[0], tmp[1], tmp[3]],
                     [-tmp[1], tmp[2], tmp[4]],
                     [tmp[3], -tmp[4], tmp[5]], ])
-
         M += M2
+
+        M2a = 1j*(M2 + M2.transpose().conj())/2.0 * nuc/w
+        M += M2a
+
         icount += 1
 
     return M
