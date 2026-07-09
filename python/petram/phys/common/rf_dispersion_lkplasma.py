@@ -166,7 +166,7 @@ def make_functions(terms, cnorm):
             if col_model == 0:
                 nucol = np.zeros((len(masses)+1,))
             elif col_model == 1:
-                nucol = f_collisions(dens_i, masses, charges, t_e, dens_e)
+                nucol = f_collisions(dens_i, masses, charges, t_c, dens_e)
             elif col_model == 2:
                 nucol = np.zeros((len(masses)+1,))
                 nucol += t_c
@@ -236,10 +236,10 @@ def make_function_variable(terms):
             if col_model == 0:
                 nucol = np.zeros((len(masses)+1,))
             elif col_model == 1:
-                nucol = f_collisions(dens_i, masses, charges, t_e, dens_e)
+                nucol = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
             elif col_model == 2:
                 nucol = np.zeros((len(masses)+1,))
-                nucol += t_c
+                nucol += t_c[0]
             else:
                 nucol = np.array(t_c, dtype=np.float64)
 
@@ -301,7 +301,7 @@ def make_function_variable(terms):
 
     def nucol(*_ptx, dens_e=None, t_c=None, dens_i=None):
         from petram.phys.common.rf_dispersion_coldplasma_numba import f_collisions
-        print(t_c, col_model)
+
         if col_model == 3:
             nucols = t_c
         elif col_model == 2:
@@ -321,7 +321,7 @@ def make_function_variable(terms):
         from petram.phys.common.rf_dispersion_lkplasma_numba import (epsilonr_pl_hot_std,
                                                                      eval_npara_nperp,
                                                                      rotate_dielectric,)
-        print(t_c, type(t_c))
+
         e_cold = epsilonr_pl_cold_std(
             omega, B, dens_i, masses, charges, t_c, dens_e, col_model)
 
@@ -338,10 +338,10 @@ def make_function_variable(terms):
             if col_model == 0:
                 nucol = np.zeros((len(masses)+1,))
             elif col_model == 1:
-                nucol = f_collisions(dens_i, masses, charges, t_e, dens_e)
+                nucol = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
             elif col_model == 2:
                 nucol = np.zeros((len(masses)+1,))
-                nucol += t_c
+                nucol += t_c[0]
             else:
                 nucol = np.array(t_c, dtype=np.float64)
 
@@ -362,7 +362,7 @@ def make_function_variable(terms):
                                     nucol)
 
             eps = e_hot - e_hot2
-        print(eps)
+
         out = -epsilon0 * omega * omega * eps
         out = rotate_dielectric(B, kpe, out)
 
