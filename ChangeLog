@@ -1,4 +1,14 @@
         <<< Change Log >>>
+07/15/2026
+	* improved hot plasma dielectric tensor to support two interfaces
+             epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
+                                 npara, nperp, nhrms, terms, use_eye3)
+             epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
+                                 npara, nperp, nhrms, terms, use_eye3, nucol)
+        ** nucol is collision frequency to introduce anti-herminain part by
+	   damping the dielectric current. W/o setting it, nucol is set to zero.
+
+
 07/07/2026
 	* improved cold plasma collision model. One can directly specify array
 	of collision frequecies for electrons and ions.

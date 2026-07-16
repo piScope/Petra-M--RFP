@@ -41,7 +41,7 @@
 import logging
 from petram.phys.common.rf_plasma_wc_wp import om, wpesq, wpisq, wce, wci
 import numpy as np
-from numpy import (pi, sin, cos, exp, sqrt, log, arctan2, cross,
+from numpy import (pi, sin, cos, exp, sqrt, log, arctan2, cross, abs,
                    max, array, linspace, conj, transpose,
                    sum, zeros, dot, array, ascontiguousarray)
 from numba import njit, void, int32, int64, float64, complex128, types
@@ -311,7 +311,7 @@ def adjust_terms(tmp, terms):
 
 @njit(complex128[:, ::1](float64, float64[:], float64[:], float64[:], darray_ro, iarray_ro,
                          float64, float64, float64, float64, int32, iarray2_ro, int32, float64[:]))
-def epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne, npara, nperp, nhrms, terms, use_eye3, nucol):
+def _epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne, npara, nperp, nhrms, terms, use_eye3, nucol):
 
     b_norm = sqrt(B[0]**2+B[1]**2+B[2]**2)
     freq = w/2/pi
@@ -372,6 +372,44 @@ def epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne, npara, npe
 
     return M
 
+# Overloading to implement two interfaces
+#     epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
+#                         npara, nperp, nhrms, terms, use_eye3)
+#     epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
+#                         npara, nperp, nhrms, terms, use_eye3, nucol)
+
+
+from numba.extending import overload
+def call_epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
+                             npara, nperp, nhrms, terms, use_eye3, nucol=None):
+    pass
+
+@overload(call_epsilonr_pl_hot_std, strict=False)
+def jit_epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
+                            npara, nperp, nhrms, terms, use_eye3, nucol=None):
+
+    if isinstance(nucol, (types.Omitted, types.NoneType)) or nucol is None:
+        # Inner implementation matching the "1 argument" call
+        def hot_eps_none_impl(w, B, temps, denses, masses, charges, Te, ne,
+                              npara, nperp, nhrms, terms, use_eye3, nucol=None):
+            nucol = np.zeros((13, ), dtype=np.float64)
+            return _epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
+                                 npara, nperp, nhrms, terms, use_eye3, nucol)
+
+        return hot_eps_none_impl
+
+    else:
+        # Inner implementation matching the "2 arguments" call
+        def hot_eps_impl(w, B, temps, denses, masses, charges, Te, ne,
+                         npara, nperp, nhrms, terms, use_eye3, nucol):
+            return _epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
+                                        npara, nperp, nhrms, terms, use_eye3, nucol)
+
+        return hot_eps_impl
+@njit
+def epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne, npara, nperp, nhrms, terms, use_eye3, nucol=None):
+    return call_epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
+                                    npara, nperp, nhrms, terms, use_eye3, nucol)
 
 @njit(complex128[:, :](float64[:], float64[:], complex128[:, :]))
 def rotate_dielectric(B, K, M):
@@ -451,7 +489,7 @@ def eval_npara_nperp(ptx, omega, kpakpe, kpe_mode, e_cold):
         P = e_cold[2, 2]
 
         nperpsq = (D**2 - (npara**2 - S)**2)/(npara**2 - S)
-        nperp = sqrt(nperpsq)
+        nperp = sqrt(abs(nperpsq))
         #nperp = nperp.real
     elif kpe_mode == 2:  # slow wave
         npara = speed_of_light*kpakpe[0]/omega
@@ -459,13 +497,13 @@ def eval_npara_nperp(ptx, omega, kpakpe, kpe_mode, e_cold):
         D = e_cold[0, 1]*1j
         P = e_cold[2, 2]
         nperpsq = -(npara**2 - S)*P/S
-        nperp = sqrt(nperpsq)
+        nperp = sqrt(abs(nperpsq))
         #nperp = nperp.real
     else:
         npara = speed_of_light*kpakpe[0]/omega
         nperp = speed_of_light*kpakpe[1]/omega
 
-    return array([npara, nperp])
+    return array([npara, nperp], dtype=complex128)
 
 #
 # routines to define kpe as vector
