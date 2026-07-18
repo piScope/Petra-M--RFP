@@ -147,19 +147,20 @@ def _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
     D = 0j
 
     if col_model == 1:
+        tmp = f_collisions(denses, masses, charges, Te[0], ne)
+        nu_eis = np.zeros((len(masses)+1,))+np.max(tmp)
+    elif col_model == 2:
         nu_eis = f_collisions(denses, masses, charges, Te[0], ne)
-    elif col_model in (2, 3):
+    elif col_model in (3, 4):
         nu_eis = Te
     else:
         nu_eis = np.array([0.]*(len(masses)+1))
 
     if ne > 0.:
-        if col_model == 0:
-            Se, Pe, De = SPD_el_b(w, b_norm, ne, 0.)
-        elif col_model == 2 or col_model == 4:
-            Se, Pe, De = SPD_el_b(w, b_norm, ne, nu_eis[0])
-        else:
+        if col_model == 1 or col_model == 2:
             Se, Pe, De = SPD_el(w, b_norm, ne, nu_eis[0])
+        else:
+            Se, Pe, De = SPD_el_b(w, b_norm, ne, nu_eis[0])
 
         S += Se
         P += Pe
@@ -167,13 +168,10 @@ def _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
 
     for dens, mass, charge, nu_ei in zip(denses, masses, charges, nu_eis[1:]):
         if dens > 0.:
-            if col_model == 0:
-                Si, Pi, Di = SPD_ion_b(w, b_norm, dens, mass, charge, 0)
-            elif col_model == 2 or col_model == 3:
-                wcol = Te
-                Si, Pi, Di = SPD_ion_b(w, b_norm, dens, mass, charge, nu_ei)
-            else:
+            if col_model == 1 or col_model == 2:
                 Si, Pi, Di = SPD_ion(w, b_norm, dens, mass, charge, nu_ei)
+            else:
+                Si, Pi, Di = SPD_ion_b(w, b_norm, dens, mass, charge, nu_ei)
 
             S += Si
             P += Pi
@@ -218,9 +216,13 @@ def _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
        stix_options = ("SDP", "SD", "SP", "DP", "P", "w/o xx", "None")
     '''
     b_norm = sqrt(B[0]**2+B[1]**2+B[2]**2)
+
     if col_model == 1:
+        tmp = f_collisions(denses, masses, charges, Te[0], ne)
+        nu_eis = np.zeros((len(masses)+1,))+np.max(tmp)
+    elif col_model == 2:
         nu_eis = f_collisions(denses, masses, charges, Te[0], ne)
-    elif col_model in (2, 3):
+    elif col_model in (3, 4):
         nu_eis = Te
     else:
         nu_eis = np.array([0.]*(len(masses)+1))
@@ -236,13 +238,10 @@ def _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
 
     icount = 0
     if ne > 0.:
-        if col_model == 0:
-            S, P, D = SPD_el_b(w, b_norm, ne, 0.)
-        elif col_model == 2 or col_model == 3:
-            wcol = Te
-            S, P, D = SPD_el_b(w, b_norm, ne, nu_eis[0])
-        else:
+        if col_model == 1 or col_model == 2:
             S, P, D = SPD_el(w, b_norm, ne, nu_eis[0])
+        else:
+            S, P, D = SPD_el_b(w, b_norm, ne, nu_eis[0])
 
         S, P, D = adjust_terms(S, P, D, terms[icount, :])
         M2 = array([[S, -1j*D, 0j], [1j*D, S, 0j], [0., 0j, P]])
@@ -251,12 +250,10 @@ def _epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms,
     icount = 1
     for dens, mass, charge, nu_ei in zip(denses, masses, charges, nu_eis[1:]):
         if dens > 0.:
-            if col_model == 0:
-                S, P, D = SPD_ion_b(w, b_norm, dens, mass, charge, 0.0)
-            elif col_model == 2 or col_model == 3:
-                S, P, D = SPD_ion_b(w, b_norm, dens, mass, charge, nu_ei)
-            else:
+            if col_model == 1 or col_model == 2:
                 S, P, D = SPD_ion(w, b_norm, dens, mass, charge, nu_ei)
+            else:
+                S, P, D = SPD_ion_b(w, b_norm, dens, mass, charge, nu_ei)
 
             # S, P, D = SPD_ion(w, b_norm, dens, mass, charge, nu_ei)
             S, P, D = adjust_terms(S, P, D, terms[icount, :])

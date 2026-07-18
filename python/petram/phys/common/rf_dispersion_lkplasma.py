@@ -166,8 +166,11 @@ def make_functions(terms, cnorm):
             if col_model == 0:
                 nucol = np.zeros((len(masses)+1,))
             elif col_model == 1:
-                nucol = f_collisions(dens_i, masses, charges, t_c, dens_e)
+                tmp = f_collisions(dens_i, masses, charges, t_c, dens_e)
+                nucol = np.zeros((len(masses)+1,)) + np.max(tmp)
             elif col_model == 2:
+                nucol = f_collisions(dens_i, masses, charges, t_c, dens_e)
+            elif col_model == 3:
                 nucol = np.zeros((len(masses)+1,))
                 nucol += t_c
             else:
@@ -236,8 +239,11 @@ def make_function_variable(terms):
             if col_model == 0:
                 nucol = np.zeros((len(masses)+1,))
             elif col_model == 1:
-                nucol = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
+                tmp = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
+                nucol = np.zeros((len(masses)+1,)) + np.max(tmp)
             elif col_model == 2:
+                nucol = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
+            elif col_model == 3:
                 nucol = np.zeros((len(masses)+1,))
                 nucol += t_c[0]
             else:
@@ -302,16 +308,21 @@ def make_function_variable(terms):
     def nucol(*_ptx, dens_e=None, t_c=None, dens_i=None):
         from petram.phys.common.rf_dispersion_coldplasma_numba import f_collisions
 
-        if col_model == 3:
-            nucols = t_c
-        elif col_model == 2:
-            t_c = np.atleast_1d(t_c)[0]
-            nucols = np.zeros((len(masses)+1,))+t_c
+        if col_model == 0:
+            nucols = np.zeros((len(masses)+1,))
         elif col_model == 1:
             t_c = np.atleast_1d(t_c)[0]
+            tmp = f_collisions(dens_i, masses, charges, t_c, dens_e)
+            nucols = np.zeros((len(masses)+1,)) + np.max(tmp)
+        elif col_model == 2:
+            t_c = np.atleast_1d(t_c)[0]
             nucols = f_collisions(dens_i, masses, charges, t_c, dens_e)
+        elif col_model == 3:
+            t_c = np.atleast_1d(t_c)[0]
+            nucols = np.zeros((len(masses)+1,))+t_c
         else:
-            nucols = np.zeros((len(masses)+1,))
+            nucols = t_c
+
         return nucols
 
     def epsilonrac(*ptx, B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
@@ -338,8 +349,11 @@ def make_function_variable(terms):
             if col_model == 0:
                 nucol = np.zeros((len(masses)+1,))
             elif col_model == 1:
-                nucol = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
+                tmp = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
+                nucol = np.zeros((len(masses)+1,)) + np.max(tmp)
             elif col_model == 2:
+                nucol = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
+            elif col_model == 3:
                 nucol = np.zeros((len(masses)+1,))
                 nucol += t_c[0]
             else:
@@ -535,7 +549,7 @@ def build_coefficients(ind_vars, omega, B, t_c, dens_e, t_e, dens_i, t_i,
     t_e_coeff = SCoeff([t_e, ], ind_vars, l, g,
                        return_complex=False, return_mfem_constant=True)
 
-    if col_model == 3:
+    if col_model == 4:
         t_c_coeff = VCoeff(num_ions+1, [t_c, ], ind_vars, l, g,
                            return_complex=False, return_mfem_constant=True)
     elif col_model == 0:

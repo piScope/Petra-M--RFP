@@ -53,7 +53,7 @@ stix_options = ["S(xx/yy)", "D(xy/yx)", "P(zz)",
                 "Prop.(H)", "Abs.(A)"]
 default_stix_option = [(x, True) for x in stix_options[:]]
 
-col_model_options = ["w/o col.", "Tc", nu_txt+"_col", nu_txt+"_col[:]"]
+col_model_options = ["w/o col.", "Tc", nu_txt+"_col(Tc)", nu_txt+"_col", nu_txt+"_col[:]"]
 default_col_model = col_model_options[1]
 
 #
@@ -184,7 +184,7 @@ def build_coefficients(ind_vars, omega, B, dens_e, t_e, dens_i, masses, charges,
     dens_e_coeff = SCoeff([dens_e, ], ind_vars, l, g,
                           return_complex=False, return_mfem_constant=True)
 
-    if col_model == 3:
+    if col_model == 4:
         t_e_coeff = VCoeff(num_ions+1, [t_e, ], ind_vars, l, g,
                        return_complex=False, return_mfem_constant=True)
     elif col_model == 0:
@@ -330,14 +330,18 @@ def build_variables(solvar, ss, ind_vars, omega, B, dens_e, t_e, dens_i, masses,
 
     def nucols(*_ptx, B=None, dens_e=None, t_e=None, dens_i=None):
         from petram.phys.common.rf_dispersion_coldplasma_numba import f_collisions
-        if col_model == 3:
+        if col_model == 4:
             nucols = t_e
-        elif col_model == 2:
+        elif col_model == 3:
             t_e = np.atleast_1d(t_e)[0]
             nucols = np.zeros((len(masses)+1,))+t_e
-        elif col_model == 1:
+        elif col_model == 2:
             t_e = np.atleast_1d(t_e)[0]
             nucols = f_collisions(dens_i, masses, charges, t_e, dens_e)
+        elif col_model == 1:
+            t_e = np.atleast_1d(t_e)[0]
+            tmp = f_collisions(dens_i, masses, charges, t_e, dens_e)
+            nucols = np.zeros((len(masses)+1,))+np.max(tmp)
         else:
             nucols = np.zeros((len(masses)+1,))
         return nucols

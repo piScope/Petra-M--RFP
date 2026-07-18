@@ -14,7 +14,8 @@
 	of collision frequecies for electrons and ions.
 
 	** w/o col. : no collision
-	** Tc : collision frequency is computed by using Tc as electron temperature
+	** Tc : Tc is used to evaluate electron-ion collsion frequecy and used as f_col for all spiecies.
+	** nu_col(Tc) : collision frequency is computed by using Tc as electron temperature.
 	** nu_col : directly setting nu_col for all species
 	** nu_col(array) : setting nu_cols indpendently for each species. Must be array
 	                   size of 1 + number of ions. First element is for electrons.
