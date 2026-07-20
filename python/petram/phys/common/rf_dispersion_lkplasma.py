@@ -239,13 +239,16 @@ def make_function_variable(terms):
             if col_model == 0:
                 nucol = np.zeros((len(masses)+1,))
             elif col_model == 1:
-                tmp = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
+                t_c = np.atleast_1d(t_c)[0]
+                tmp = f_collisions(dens_i, masses, charges, t_c, dens_e)
                 nucol = np.zeros((len(masses)+1,)) + np.max(tmp)
             elif col_model == 2:
-                nucol = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
+                t_c = np.atleast_1d(t_c)[0]
+                nucol = f_collisions(dens_i, masses, charges, t_c, dens_e)
             elif col_model == 3:
+                t_c = np.atleast_1d(t_c)[0]
                 nucol = np.zeros((len(masses)+1,))
-                nucol += t_c[0]
+                nucol += t_c
             else:
                 nucol = np.array(t_c, dtype=np.float64)
 
@@ -349,13 +352,16 @@ def make_function_variable(terms):
             if col_model == 0:
                 nucol = np.zeros((len(masses)+1,))
             elif col_model == 1:
-                tmp = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
+                t_c = np.atleast_1d(t_c)[0]
+                tmp = f_collisions(dens_i, masses, charges, t_c, dens_e)
                 nucol = np.zeros((len(masses)+1,)) + np.max(tmp)
             elif col_model == 2:
-                nucol = f_collisions(dens_i, masses, charges, t_c[0], dens_e)
+                t_c = np.atleast_1d(t_c)[0]
+                nucol = f_collisions(dens_i, masses, charges, t_c, dens_e)
             elif col_model == 3:
+                t_c = np.atleast_1d(t_c)[0]
                 nucol = np.zeros((len(masses)+1,))
-                nucol += t_c[0]
+                nucol += t_c
             else:
                 nucol = np.array(t_c, dtype=np.float64)
 

@@ -1,4 +1,8 @@
         <<< Change Log >>>
+07/18/2026
+	* Completed collisional abosorption model update
+	** nu_col(Tc) option is added in cold,lkplasma (discussed in 07/07)
+	** Tc option is kept the same as before. (See 07/07 log)
 07/15/2026
 	* improved hot plasma dielectric tensor to support two interfaces
              epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
