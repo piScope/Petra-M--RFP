@@ -120,11 +120,12 @@ class EM1D_ColdPlasma(EM1D_Vac):
 
         from petram.phys.common.rf_dispersion_coldplasma import build_coefficients
 
-        coeff1, coeff2, coeff3, coeff_nuei = build_coefficients(ind_vars, omega, B, dens_e, t_e,
-                                                                        dens_i, masses, charges, col_model, cnorm,
-                                                                        self._global_ns, self._local_ns,
-                                                                        sdim=1, terms=self.stix_terms)
-        return coeff1, coeff2, coeff3, coeff_nuei,  ky, kz
+        coeff1, coeff2, coeff3 = build_coefficients(ind_vars, omega, B, dens_e, t_e,
+                                                    dens_i, masses, charges, col_model, cnorm,
+                                                    self._global_ns, self._local_ns,
+                                                    sdim=1, terms=self.stix_terms)
+
+        return coeff1, coeff2, coeff3, ky, kz
 
     def add_bf_contribution(self, engine, a, real=True, kfes=0):
         if real:
@@ -132,7 +133,7 @@ class EM1D_ColdPlasma(EM1D_Vac):
         else:
             dprint1("Add BF contribution(imag)" + str(self._sel_index))
 
-        coeff1, coeff2, coeff3, _coeff_nuei,  ky, kz = self.jited_coeff
+        coeff1, coeff2, coeff3, ky, kz = self.jited_coeff
         self.set_integrator_realimag_mode(real)
 
         # if self.has_pml():
@@ -180,7 +181,7 @@ class EM1D_ColdPlasma(EM1D_Vac):
             dprint1("Add mixed contribution(imag)" + "(" + str(r) + "," + str(c) + ')'
                     + str(self._sel_index))
 
-        coeff1, coeff2, coeff3, _coeff_nuei, ky, kz = self.jited_coeff
+        coeff1, coeff2, coeff3, ky, kz = self.jited_coeff
         self.set_integrator_realimag_mode(real)
 
         # super(EM1D_ColdPlasma, self).add_mix_contribution(engine, mbf, r, c, is_trans,

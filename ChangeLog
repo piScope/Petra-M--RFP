@@ -1,0 +1,28 @@
+        <<< Change Log >>>
+07/18/2026
+	* Completed collisional abosorption model update
+	** nu_col(Tc) option is added in cold,lkplasma (discussed in 07/07)
+	** Tc option is kept the same as before. (See 07/07 log)
+07/15/2026
+	* improved hot plasma dielectric tensor to support two interfaces
+             epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
+                                 npara, nperp, nhrms, terms, use_eye3)
+             epsilonr_pl_hot_std(w, B, temps, denses, masses, charges, Te, ne,
+                                 npara, nperp, nhrms, terms, use_eye3, nucol)
+        ** nucol is collision frequency to introduce anti-herminain part by
+	   damping the dielectric current. W/o setting it, nucol is set to zero.
+
+
+07/07/2026
+	* improved cold plasma collision model. One can directly specify array
+	of collision frequecies for electrons and ions.
+
+	** w/o col. : no collision
+	** Tc : Tc is used to evaluate electron-ion collsion frequecy and used as f_col for all spiecies.
+	** nu_col(Tc) : collision frequency is computed by using Tc as electron temperature.
+	** nu_col : directly setting nu_col for all species
+	** nu_col(array) : setting nu_cols indpendently for each species. Must be array
+	                   size of 1 + number of ions. First element is for electrons.
+
+02/10/2026
+	* created from PetraM-RF module by separating RF physics for plasma waves
