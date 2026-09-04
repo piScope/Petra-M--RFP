@@ -21,6 +21,9 @@ dependencies = [
     "numba>=0.59",
 ]
 
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
 [project.urls]
 "Homepage" = "https://github.com/piScope/Petra-M--RFP"
 "Download" = "https://github.com/piScope/Petra-M--RFP"
@@ -35,3 +38,9 @@ requires = [
 [tool.setuptools]
 # ...
 package-dir = {"" = "python"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "aot: compiles the Numba AOT RF extensions and compares them with JIT output",
+]

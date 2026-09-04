@@ -16,8 +16,6 @@ CPU/build environment that created it.  Rebuild it after changing any of
 those, or after changing either source kernel module.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from numba.pycc import CC
@@ -38,10 +36,6 @@ def _compiler(module_name: str, output_dir: Path) -> CC:
 def build_coldplasma(output_dir: Path | None = None) -> None:
     """Compile the typed cold-plasma entry points."""
     cc = _compiler("_rf_dispersion_coldplasma_aot", output_dir or _HERE)
-
-    @cc.export("f_collisions", "float64[:](float64[::1], float64[::1], int32[::1], float64, float64)")
-    def f_collisions(denses, masses, charges, temperature, electron_density):
-        return cold.f_collisions(denses, masses, charges, temperature, electron_density)
 
     @cc.export("epsilonr_pl_cold_std", "complex128[:, ::1](float64, float64[::1], float64[::1], float64[::1], int32[::1], float64[::1], float64, int32)")
     def epsilonr_pl_cold_std(w, B, denses, masses, charges, temperatures, electron_density, collision_model):
@@ -70,14 +64,22 @@ def build_coldplasma(output_dir: Path | None = None) -> None:
         return cold._epsilonr_pl_cold(w, B, denses, masses, charges, temperatures,
                                       electron_density, collision_model)
 
+    @cc.export("epsilonr_pl_cold_scalar_temperature", "complex128[:, :](float64, float64[::1], float64[::1], float64[::1], int32[::1], float64, float64, int32)")
+    def epsilonr_pl_cold_scalar_temperature(w, B, denses, masses, charges, temperature, electron_density, collision_model):
+        temperatures = cold.np.zeros(len(masses) + 1) + temperature
+        return cold._epsilonr_pl_cold(w, B, denses, masses, charges, temperatures,
+                                      electron_density, collision_model)
+
     @cc.export("epsilonr_pl_cold_generic", "complex128[:, :](float64, float64[::1], float64[::1], float64[::1], int32[::1], float64[::1], float64, int32[:, ::1], int32, int32)")
     def epsilonr_pl_cold_generic(w, B, denses, masses, charges, temperatures, electron_density, terms, use_eye3, collision_model):
         return cold._epsilonr_pl_cold_generic(w, B, denses, masses, charges, temperatures,
                                               electron_density, terms, use_eye3, collision_model)
 
-    @cc.export("rotate_dielectric", "complex128[:, :](float64[::1], complex128[:, ::1])")
-    def rotate_dielectric(B, dielectric):
-        return cold.rotate_dielectric(B, dielectric)
+    @cc.export("epsilonr_pl_cold_generic_scalar_temperature", "complex128[:, :](float64, float64[::1], float64[::1], float64[::1], int32[::1], float64, float64, int32[:, ::1], int32, int32)")
+    def epsilonr_pl_cold_generic_scalar_temperature(w, B, denses, masses, charges, temperature, electron_density, terms, use_eye3, collision_model):
+        temperatures = cold.np.zeros(len(masses) + 1) + temperature
+        return cold._epsilonr_pl_cold_generic(w, B, denses, masses, charges, temperatures,
+                                              electron_density, terms, use_eye3, collision_model)
 
     cc.compile()
 
@@ -99,45 +101,7 @@ def build_lkplasma(output_dir: Path | None = None) -> None:
                                         electron_temperature, electron_density, npara, nperp,
                                         nhrms, terms, use_eye3, nucol)
 
-    @cc.export("rotate_dielectric", "complex128[:, :](float64[::1], float64[::1], complex128[:, ::1])")
-    def rotate_dielectric(B, K, dielectric):
-        return hot.rotate_dielectric(B, K, dielectric)
-
-    @cc.export("eval_npara_nperp", "complex128[:](float64[::1], float64, float64[::1], int64, complex128[:, ::1])")
-    def eval_npara_nperp(point, omega, kpakpe, mode, cold_dielectric):
-        return hot.eval_npara_nperp(point, omega, kpakpe, mode, cold_dielectric)
-
-    for name, function in (("eval_kpe_std", hot.eval_kpe_std),
-                           ("eval_kpe_em1d", hot.eval_kpe_em1d),
-                           ("eval_kpe_em2da", hot.eval_kpe_em2da),
-                           ("eval_kpe_em2d", hot.eval_kpe_em2d)):
-        # pycc captures the loop variable at decoration time, so make each
-        # wrapper in a helper rather than exporting a Python closure.
-        _export_kpe(cc, name, function)
-
     cc.compile()
-
-
-def _export_kpe(cc: CC, name: str, function) -> None:
-    """Register one k-perpendicular helper without changing its signature."""
-    signature = "float64[:](float64[::1], float64, float64, float64[::1], float64[::1])"
-
-    if name == "eval_kpe_std":
-        @cc.export(name, signature)
-        def wrapper(point, kpara, kperp, k, B):
-            return hot.eval_kpe_std(point, kpara, kperp, k, B)
-    elif name == "eval_kpe_em1d":
-        @cc.export(name, signature)
-        def wrapper(point, kpara, kperp, k, B):
-            return hot.eval_kpe_em1d(point, kpara, kperp, k, B)
-    elif name == "eval_kpe_em2da":
-        @cc.export(name, signature)
-        def wrapper(point, kpara, kperp, k, B):
-            return hot.eval_kpe_em2da(point, kpara, kperp, k, B)
-    else:
-        @cc.export(name, signature)
-        def wrapper(point, kpara, kperp, k, B):
-            return hot.eval_kpe_em2d(point, kpara, kperp, k, B)
 
 
 def build_all(output_dir: Path | None = None) -> None:
