@@ -1,8 +1,9 @@
-from setuptools import setup
+from setuptools import Extension, setup
 from setuptools.command.build_py import build_py as _build_py
 from codecs import open
 import os
 import sys
+import numpy
 
 
 class build_py(_build_py):
@@ -30,7 +31,16 @@ def run_setup():
     setup(
         long_description=long_description(),
         long_description_content_type="text/markdown",
-        cmdclass={"build_py": build_py},)
+        cmdclass={"build_py": build_py},
+        ext_modules=[
+            Extension("petram.phys.common._rf_dispersion_coldplasma_ext",
+                      ["python/petram/phys/common/c_ext/rf_dispersion_coldplasma_ext.c"],
+                      include_dirs=[numpy.get_include()], extra_compile_args=["-std=c99"]),
+            Extension("petram.phys.common._rf_dispersion_lkplasma_ext",
+                      ["python/petram/phys/common/c_ext/rf_dispersion_lkplasma_ext.c",
+                       "python/petram/phys/common/c_ext/bessel_ive.c"],
+                      include_dirs=[numpy.get_include()], extra_compile_args=["-std=c99"]),
+        ],)
 
 
 def main():
