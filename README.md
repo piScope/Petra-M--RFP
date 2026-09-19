@@ -1,6 +1,11 @@
 ## Petra-M(RFP)
 
-This module provides additional module for waves in plasmas
+Additional module for waves in plasmas
+
+### Install
+```bash
+python -m pip install .
+```
 
 ### EM3D : Frequency domain Maxwell equation in 3D
   Domain:   
@@ -24,34 +29,13 @@ This module provides additional module for waves in plasmas
  
 
 ### Dielectric backend
+The dielectric kernel for cold and lkplasma model is provided by C extensions
+or by Numba compiled functions. By default, C extensions are used, and selected
+models are loaded to `petram.phys.common.coldplasma` and `petram.phys.common.lkplasma`.
 
-The cold and hot dielectric APIs are available from
-`petram.phys.common.coldplasma` and `petram.phys.common.lkplasma`.
-The C extensions are selected by default. To use the original Numba kernels:
+To use the original Numba kernels, set the enviromental variable, before loading the
+module. Both facades expose `BACKEND` (`"ext"` or `"numba"`).
 
 ```bash
 export PETRAM_RFP_USE_NUMBA_DIELECTRIC=1
 ```
-
-Set this before starting the application. Set it to `0` (or unset it) for C.
-Both facades expose `BACKEND` (`"ext"` or `"numba"`). Selection is shared and
-read once at first import; restart the process to change it. Reloading a facade
-does not update existing imported references or compiled Numba callers.
-The shared wave-vector helpers remain Numba functions in both modes.
-A missing C extension raises an import error rather than silently switching.
-
-`python -m pip install .` builds the C extensions under `petram.ext.rfp` from
-sources in `ext/`. Numba AOT compilation is no longer part of installation.
-
-### Simulation regression tests
-
-The examples can be run directly with `python model.py` from a working directory
-(using a relative path to the script when working elsewhere). To compare both
-dielectric backends on the cold and hot examples:
-
-```bash
-python -m pytest tests/test_coldplasma.py tests/test_lkplasma.py -v -s
-```
-
-See [tests/README.md](tests/README.md) for dependencies, output comparisons,
-measured differences, and tolerance choices.

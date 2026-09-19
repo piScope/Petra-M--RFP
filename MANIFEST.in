@@ -1,4 +1,3 @@
-include tests/backend_probe.py
 include tests/simulation_utils.py
 recursive-include examples *.py *.dat
 prune examples/coldplasma_1d/sandbox
