@@ -58,3 +58,49 @@ def test_hot_native_ive_matches_petram_bessel(order, value):
 
     np.testing.assert_allclose(native._ive(order, value), ive(order, value),
                                rtol=2e-13, atol=2e-15)
+
+
+@pytest.mark.parametrize("order", [0, 1, 2])
+def test_hot_native_ive_matches_scipy_dense(order):
+    """Cover 0 <= x <= 1000, including both sides of branch transitions."""
+    native = pytest.importorskip(
+        "petram.phys.common._rf_dispersion_lkplasma_ext")
+    scipy_special = pytest.importorskip("scipy.special")
+    boundaries = np.array([2.0 * np.sqrt(order + 1.0), 20.4])
+    values = np.unique(np.concatenate([
+        np.linspace(0.0, 1000.0, 100001),
+        np.geomspace(1e-12, 1000.0, 10001),
+        boundaries,
+        np.nextafter(boundaries, 0.0),
+        np.nextafter(boundaries, np.inf),
+    ]))
+    actual = np.array([native._ive(order, float(x)) for x in values])
+    expected = scipy_special.ive(order, values)
+    assert np.isfinite(actual).all()
+    # Relative-only tolerance also checks the very small values near x=0.
+    np.testing.assert_allclose(actual, expected, rtol=3e-14, atol=0.0)
+
+
+@pytest.mark.parametrize("hermitian,antihermitian", [(0, 0), (1, 0), (0, 1), (1, 1)])
+def test_hot_native_term_projection(hermitian, antihermitian):
+    """Check term filtering against matrix projections, without a JIT oracle."""
+    native = pytest.importorskip(
+        "petram.phys.common._rf_dispersion_lkplasma_ext")
+    w, b, densities, masses, charges, temperatures, ne, _ = _inputs()
+    terms = np.ones((3, 8), dtype=np.int32)
+
+    def evaluate():
+        return native.epsilonr_pl_hot_std(
+            w, b, temperatures[1:], densities, masses, charges,
+            temperatures[0], ne, 10.0, 40.0, 20, terms, 0, np.zeros(3))
+
+    full = evaluate()
+    adjoint = full.conj().T
+    expected = (hermitian * (full + adjoint) / 2.0
+                + antihermitian * (full - adjoint) / 2.0)
+    # Ensure the antisymmetric entries exercise both parts of the projection.
+    assert np.all(np.abs(full[[0, 1], [1, 2]].real) > 0)
+    assert np.all(np.abs(full[[0, 1], [1, 2]].imag) > 0)
+    terms[:, 6] = hermitian
+    terms[:, 7] = antihermitian
+    np.testing.assert_allclose(evaluate(), expected, rtol=2e-14, atol=1e-12)

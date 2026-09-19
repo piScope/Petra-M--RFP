@@ -234,7 +234,79 @@ static PyObject *ive_py(PyObject *self, PyObject *args) {
     }
     return PyFloat_FromDouble(ive(order, x));
 }
+/* Rodrigues rotation, matching the two-stage Numba coordinate convention. */
+static double dot3(const double *a, const double *b) {
+    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+}
+static void cross3(const double *a, const double *b, double *out) {
+    out[0] = a[1]*b[2] - a[2]*b[1];
+    out[1] = a[2]*b[0] - a[0]*b[2];
+    out[2] = a[0]*b[1] - a[1]*b[0];
+}
+static void normalize3(double *a) {
+    double norm = sqrt(dot3(a, a));
+    for (int i = 0; i < 3; ++i) a[i] /= norm;
+}
+static void rotation_matrix(const double *a, double theta, double r[3][3]) {
+    double c = cos(theta), s = sin(theta), t = 1. - c;
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            r[i][j] = a[i]*a[j]*t + (i == j ? c : 0.);
+    r[0][1] -= a[2]*s; r[1][0] += a[2]*s;
+    r[0][2] += a[1]*s; r[2][0] -= a[1]*s;
+    r[1][2] -= a[0]*s; r[2][1] += a[0]*s;
+}
+/* M <- R M R^T. All products are staged so input/output may alias. */
+static void rotate_tensor(const double r[3][3], double *m) {
+    double complex tmp[3][3] = {{0}};
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            for (int k = 0; k < 3; ++k)
+                tmp[i][j] += r[i][k]*get(m, k, j);
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j) {
+            double complex value = 0.;
+            for (int k = 0; k < 3; ++k) value += tmp[i][k]*r[j][k];
+            put(m, i, j, value);
+        }
+}
+static void hot_rotate_v1(const double *b, const double *k, const double *m, double *out) {
+    double bn[3] = {b[0], b[1], b[2]}, ez[3] = {0., 0., 1.};
+    double ex[3] = {1., 0., 0.}, ax[3], ay[3], r[3][3];
+    normalize3(bn);
+    cross3(bn, ez, ax);
+    double norm = sqrt(dot3(ax, ax));
+    for (int i = 0; i < 18; ++i) out[i] = m[i];
+    if (!(norm < 1e-16 && bn[2] > 0.)) {
+        if (norm < 1e-16) {
+            ax[0] = 1.; ax[1] = 0.; ax[2] = 0.;
+            ay[0] = 0.; ay[1] = 1.; ay[2] = 0.;
+        } else {
+            normalize3(ax);
+            cross3(ax, bn, ay);
+        }
+        double theta = atan2(ay[2], bn[2]);
+        rotation_matrix(ax, -theta, r);
+        rotate_tensor(r, out);
+        for (int i = 0; i < 3; ++i) ex[i] = r[i][0];
+    }
+    normalize3(ex);
+    /* Project K onto the plane perpendicular to the unit magnetic field. */
+    const double kparallel = dot3(k, bn);
+    double ka[3] = {k[0]-kparallel*bn[0], k[1]-kparallel*bn[1],
+                    k[2]-kparallel*bn[2]}, kb[3];
+    normalize3(ka);
+    cross3(bn, ka, kb);
+    double theta = atan2(dot3(ex, kb), dot3(ex, ka));
+    rotation_matrix(bn, -theta, r);
+    rotate_tensor(r, out);
+}
+static PyObject *rotation_address(PyObject *s, PyObject *a) {
+    return PyLong_FromVoidPtr((void*)hot_rotate_v1);
+}
+
 static PyMethodDef methods[]= {
+    {"_hot_rotate_address", rotation_address, METH_NOARGS, "Return hot rotation address."},
     {
         "epsilonr_pl_hot_std",hot_py,METH_VARARGS,"Evaluate hot dielectric tensor."
     }

@@ -464,8 +464,8 @@ def rotate_dielectric(B, K, M):
     ex = ex/sqrt(ex[0]**2 + ex[1]**2 + ex[2]**2)
 
     #  Step 2:
-    #    Kperp is project of K on the plane perpendicular to bn
-    K = K - K*bn
+    #    Kperp is projection of K on the plane perpendicular to bn
+    K = K - np.dot(K, bn)*bn
 
     #  Step 3
     #    algin ex to K

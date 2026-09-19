@@ -57,7 +57,8 @@ static void spd_ion(double w, double b, double dens, double mass, int32_t z, dou
     }
     else {
         double complex w2=w+I*nu, wp=dens*q*q/(mass*EPS0);
-        double wc=q*b/mass, r=-wp/w/(w2+wc), l=-wp/w/(w2-wc);
+        double wc=q*b/mass;
+        double complex r=-wp/w/(w2+wc), l=-wp/w/(w2-wc);
         *p=-wp/w/w2;
         *s=(r+l)/2.;
         *d=(r-l)/2.;
@@ -85,7 +86,7 @@ static void add_spd(double *o, double complex s, double complex p, double comple
     put(o,0,1,get(o,0,1)-I*d);
     put(o,1,0,get(o,1,0)+I*d);
 }
-int petram_cold_std_v1(double w, const double *b, const double *dens, const double *masses, const int32_t *z, const double *temp, int32_t n, double ne, int32_t model, double *out) {
+int cold_std_v1(double w, const double *b, const double *dens, const double *masses, const int32_t *z, const double *temp, int32_t n, double ne, int32_t model, double *out) {
     if(n<0) return EINVAL_DIM;
     double bn=sqrt(b[0]*b[0]+b[1]*b[1]+b[2]*b[2]), nu[n+1];
     double complex s,p,d;
@@ -111,8 +112,8 @@ int petram_cold_std_v1(double w, const double *b, const double *dens, const doub
     }
     return OK;
 }
-int petram_cold_g_v1(double w, const double *b, const double *dens, const double *masses, const int32_t *z, const double *temp, int32_t n, double ne, const int32_t *terms, int32_t rows, int32_t eye, int32_t model, double *out) {
-    int rc=petram_cold_std_v1(w,b,dens,masses,z,temp,n,ne,model,out), k;
+int cold_g_v1(double w, const double *b, const double *dens, const double *masses, const int32_t *z, const double *temp, int32_t n, double ne, const int32_t *terms, int32_t rows, int32_t eye, int32_t model, double *out) {
+    int rc=cold_std_v1(w,b,dens,masses,z,temp,n,ne,model,out), k;
     if(rc||rows<n+1) return rc?rc:EINVAL_DIM;
     /* Recompute species-wise: generalized term masks cannot be applied to summed SPD. */
     double bn=sqrt(b[0]*b[0]+b[1]*b[1]+b[2]*b[2]), nu[n+1];
@@ -174,7 +175,7 @@ static PyObject *cold_std_py(PyObject *self, PyObject *args) {
     }
     ;
     PyArrayObject *o=(PyArrayObject*)PyArray_ZEROS(2,shape,NPY_COMPLEX128,0);
-    int rc=petram_cold_std_v1(w,PyArray_DATA(b),PyArray_DATA(d),PyArray_DATA(m),PyArray_DATA(z),PyArray_DATA(t),n,ne,model,PyArray_DATA(o));
+    int rc=cold_std_v1(w,PyArray_DATA(b),PyArray_DATA(d),PyArray_DATA(m),PyArray_DATA(z),PyArray_DATA(t),n,ne,model,PyArray_DATA(o));
     Py_DECREF(b);
     Py_DECREF(d);
     Py_DECREF(m);
@@ -193,10 +194,50 @@ static PyObject *cold_std_py(PyObject *self, PyObject *args) {
     Py_XDECREF(t);
     return NULL;
 }
+/* Rotate an arbitrary complex tensor as Q M Q^T, Q = Rz(theta) Ry(phi).
+ * Input/output are interleaved row-major complex128 buffers; aliasing is safe.
+ * Match the angle convention of the Numba reference, including B == 0.
+ */
+static void cold_rotate_v1(const double *b, const double *matrix, double *out) {
+    const double theta = atan2(b[1], b[0]);
+    const double ct = cos(theta), st = sin(theta);
+    const double phi = atan2(b[0]*ct + b[1]*st, b[2]);
+    const double cp = cos(phi), sp = sin(phi);
+    const double q[3][3] = {
+        {ct*cp, -st, ct*sp},
+        {st*cp, ct, st*sp},
+        {-sp, 0., cp}
+    };
+    double complex tmp[3][3] = {{0}};
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            for (int k = 0; k < 3; ++k)
+                tmp[i][j] += q[i][k] * get(matrix, k, j);
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            double complex value = 0.;
+            for (int k = 0; k < 3; ++k)
+                value += tmp[i][k] * q[j][k];
+            put(out, i, j, value);
+        }
+    }
+}
+static PyObject *rotation_address(PyObject *s, PyObject *a) {
+    return PyLong_FromVoidPtr((void*)cold_rotate_v1);
+}
 static PyObject *address(PyObject *s, PyObject *a) {
-    return PyLong_FromVoidPtr((void*)petram_cold_std_v1);
+    return PyLong_FromVoidPtr((void*)cold_std_v1);
+}
+static PyObject *generalized_address(PyObject *s, PyObject *a) {
+    return PyLong_FromVoidPtr((void*)cold_g_v1);
+}
+static PyObject *collisions_address(PyObject *s, PyObject *a) {
+    return PyLong_FromVoidPtr((void*)collisions);
 }
 static PyMethodDef methods[]= {
+    {"_collisions_address", collisions_address, METH_NOARGS, "Return collision frequency address."},
+    {"_cold_rotate_address", rotation_address, METH_NOARGS, "Return cold tensor rotation address."},
+    {"_cold_g_address", generalized_address, METH_NOARGS, "Return generalized v1 C ABI address."},
     {
         "epsilonr_pl_cold_std",cold_std_py,METH_VARARGS,"Evaluate cold dielectric tensor."
     }

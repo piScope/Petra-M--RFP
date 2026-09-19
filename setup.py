@@ -32,14 +32,18 @@ def run_setup():
         long_description=long_description(),
         long_description_content_type="text/markdown",
         cmdclass={"build_py": build_py},
+        # ctypes obtains kernel addresses from Python methods; only the
+        # PyMODINIT_FUNC initialization symbols need dynamic visibility.
         ext_modules=[
             Extension("petram.phys.common._rf_dispersion_coldplasma_ext",
                       ["python/petram/phys/common/c_ext/rf_dispersion_coldplasma_ext.c"],
-                      include_dirs=[numpy.get_include()], extra_compile_args=["-std=c99"]),
+                      include_dirs=[numpy.get_include()], 
+                      extra_compile_args=["-std=c99", "-fvisibility=hidden"]),
             Extension("petram.phys.common._rf_dispersion_lkplasma_ext",
                       ["python/petram/phys/common/c_ext/rf_dispersion_lkplasma_ext.c",
                        "python/petram/phys/common/c_ext/bessel_ive.c"],
-                      include_dirs=[numpy.get_include()], extra_compile_args=["-std=c99"]),
+                      include_dirs=[numpy.get_include()], 
+                      extra_compile_args=["-std=c99", "-fvisibility=hidden"]),
         ],)
 
 
