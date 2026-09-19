@@ -37,12 +37,12 @@ def run_setup():
         ext_modules=[
             Extension("petram.phys.common._rf_dispersion_coldplasma_ext",
                       ["python/petram/phys/common/c_ext/rf_dispersion_coldplasma_ext.c"],
-                      include_dirs=[numpy.get_include()], 
+                      include_dirs=[numpy.get_include()],
                       extra_compile_args=["-std=c99", "-fvisibility=hidden"]),
             Extension("petram.phys.common._rf_dispersion_lkplasma_ext",
                       ["python/petram/phys/common/c_ext/rf_dispersion_lkplasma_ext.c",
                        "python/petram/phys/common/c_ext/bessel_ive.c"],
-                      include_dirs=[numpy.get_include()], 
+                      include_dirs=[numpy.get_include()],
                       extra_compile_args=["-std=c99", "-fvisibility=hidden"]),
         ],)
 
