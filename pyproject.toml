@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=7"]
+test = ["pytest>=7", "scipy"]
 
 [project.urls]
 "Homepage" = "https://github.com/piScope/Petra-M--RFP"
@@ -33,7 +33,6 @@ requires = [
         "setuptools>=80.0.1",
         "pip>=25.1.0", 
         "numpy>=1.24",
-        "numba>=0.59",
 ]
 
 [tool.setuptools]
@@ -42,6 +41,4 @@ package-dir = {"" = "python"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = [
-    "aot: compiles the Numba AOT RF extensions and compares them with JIT output",
-]
+markers = ["integration: runs complete Petra-M example simulations with both dielectric backends"]

@@ -5,7 +5,7 @@ import numpy as np
 from numba import njit, types
 from numba.extending import overload
 
-from . import _rf_dispersion_lkplasma_ext as _native
+from petram.ext.rfp import _rf_dispersion_lkplasma_ext as _native
 
 _hot_std = CFUNCTYPE(
     c_int32, c_double, c_void_p, c_void_p, c_void_p, c_void_p, c_void_p,

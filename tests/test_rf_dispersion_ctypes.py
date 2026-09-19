@@ -18,7 +18,7 @@ def _inputs():
 
 
 def test_cold_ctypes_kernel_matches_jit():
-    pytest.importorskip("petram.phys.common._rf_dispersion_coldplasma_ext")
+    pytest.importorskip("petram.ext.rfp._rf_dispersion_coldplasma_ext")
     from petram.phys.common import rf_dispersion_coldplasma_ext as native
     from petram.phys.common import rf_dispersion_coldplasma_numba as jit
 
@@ -40,7 +40,7 @@ def test_cold_ctypes_kernel_matches_jit():
 def test_hot_native_zfunc_matches_numba(value):
     """The C rational and asymptotic Z-function branches match Numba."""
     native = pytest.importorskip(
-        "petram.phys.common._rf_dispersion_lkplasma_ext")
+        "petram.ext.rfp._rf_dispersion_lkplasma_ext")
     from petram.phys.common.numba_zfunc import zfunc
 
     np.testing.assert_allclose(native._zfunc(value), zfunc(value),
@@ -53,7 +53,7 @@ def test_hot_native_zfunc_matches_numba(value):
 def test_hot_native_ive_matches_petram_bessel(order, value):
     """The C real-λ specialization matches the active Bessel implementation."""
     native = pytest.importorskip(
-        "petram.phys.common._rf_dispersion_lkplasma_ext")
+        "petram.ext.rfp._rf_dispersion_lkplasma_ext")
     from petram.helper.bessel import ive
 
     np.testing.assert_allclose(native._ive(order, value), ive(order, value),
@@ -64,7 +64,7 @@ def test_hot_native_ive_matches_petram_bessel(order, value):
 def test_hot_native_ive_matches_scipy_dense(order):
     """Cover 0 <= x <= 1000, including both sides of branch transitions."""
     native = pytest.importorskip(
-        "petram.phys.common._rf_dispersion_lkplasma_ext")
+        "petram.ext.rfp._rf_dispersion_lkplasma_ext")
     scipy_special = pytest.importorskip("scipy.special")
     boundaries = np.array([2.0 * np.sqrt(order + 1.0), 20.4])
     values = np.unique(np.concatenate([
@@ -85,7 +85,7 @@ def test_hot_native_ive_matches_scipy_dense(order):
 def test_hot_native_term_projection(hermitian, antihermitian):
     """Check term filtering against matrix projections, without a JIT oracle."""
     native = pytest.importorskip(
-        "petram.phys.common._rf_dispersion_lkplasma_ext")
+        "petram.ext.rfp._rf_dispersion_lkplasma_ext")
     w, b, densities, masses, charges, temperatures, ne, _ = _inputs()
     terms = np.ones((3, 8), dtype=np.int32)
 

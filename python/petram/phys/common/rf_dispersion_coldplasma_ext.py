@@ -5,7 +5,7 @@ import numpy as np
 from numba import njit, types
 from numba.extending import overload
 
-from . import _rf_dispersion_coldplasma_ext as _native
+from petram.ext.rfp import _rf_dispersion_coldplasma_ext as _native
 
 __all__ = ["epsilonr_pl_cold_std", "epsilonr_pl_cold_g",
            "epsilonr_pl_cold", "epsilonr_pl_cold_generic", "f_collisions"]
