@@ -120,8 +120,13 @@ static void add(double *o,double complex *q,const int32_t*t,double nuc,double w)
     else if(t[3])r[2]=q[2]-q[0];
     if(t[4])r[3]=q[3];
     if(t[5])r[4]=q[4];
-    if(!t[6])for(int i=0;i<6;i++)r[i]-=creal(r[i]);
-    if(!t[7])for(int i=0;i<6;i++)r[i]=creal(r[i]);
+    /* XY and YZ are antisymmetric: their imaginary parts are Hermitian. */
+    for(int i=0;i<6;i++) {
+        const int antisymmetric = (i == 1 || i == 4);
+        const double complex hermitian = antisymmetric ? I*cimag(r[i]) : creal(r[i]);
+        const double complex antihermitian = antisymmetric ? creal(r[i]) : I*cimag(r[i]);
+        r[i] = (t[6] ? hermitian : 0.) + (t[7] ? antihermitian : 0.);
+    }
     m[0]=r[0];
     m[1]=r[1];
     m[2]=r[3];
