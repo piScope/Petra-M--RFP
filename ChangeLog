@@ -1,4 +1,12 @@
         <<< Change Log >>>
+09/19/2026 (26.9.19)
+	* Added C/ctypes cold and hot plasma dielectric backends, including
+	  collision frequencies and tensor rotation; retired Numba AOT builds.
+	* C extensions are the default. Set PETRAM_RFP_USE_NUMBA_DIELECTRIC=1
+	  before startup to select the original Numba backend.
+	* Corrected hot tensor projection and term filtering, cold ion damping,
+	  and cold tensor rotation for array temperature inputs.
+	* Added cold and hot 1D examples with full-simulation backend comparisons.
 07/18/2026
 	* Completed collisional abosorption model update
 	** nu_col(Tc) option is added in cold,lkplasma (discussed in 07/07)

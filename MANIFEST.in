@@ -1,0 +1,4 @@
+include tests/simulation_utils.py
+recursive-include examples *.py *.dat
+prune examples/coldplasma_1d/sandbox
+prune examples/lkplasma_1d/sandbox

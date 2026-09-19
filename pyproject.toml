@@ -7,7 +7,7 @@ maintainers = [ { name = "S. Shiraiwa", email = "shiraiwa@princeton.edu" } ]
 keywords = ["scientific computing", "waves in plasmas"]
 readme = "README.md"
 requires-python = ">=3.10"
-version="26.7.7"
+version="26.9.19"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
@@ -17,8 +17,12 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "petram_rf >= 26.1.0"
+    "petram_rf >= 26.1.0",
+    "numba>=0.59",
 ]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "scipy"]
 
 [project.urls]
 "Homepage" = "https://github.com/piScope/Petra-M--RFP"
@@ -28,8 +32,13 @@ dependencies = [
 requires = [
         "setuptools>=80.0.1",
         "pip>=25.1.0", 
+        "numpy>=1.24",
 ]
 
 [tool.setuptools]
 # ...
 package-dir = {"" = "python"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: runs complete Petra-M example simulations with both dielectric backends"]

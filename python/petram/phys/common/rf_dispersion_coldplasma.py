@@ -53,7 +53,8 @@ stix_options = ["S(xx/yy)", "D(xy/yx)", "P(zz)",
                 "Prop.(H)", "Abs.(A)"]
 default_stix_option = [(x, True) for x in stix_options[:]]
 
-col_model_options = ["w/o col.", "Tc", nu_txt+"_col(Tc)", nu_txt+"_col", nu_txt+"_col[:]"]
+col_model_options = ["w/o col.", "Tc", nu_txt +
+                     "_col(Tc)", nu_txt+"_col", nu_txt+"_col[:]"]
 default_col_model = col_model_options[1]
 
 #
@@ -165,8 +166,8 @@ default_stix_modelvalue = panelvalue2value([default_stix_option]*2 + [1])
 def build_coefficients(ind_vars, omega, B, dens_e, t_e, dens_i, masses, charges, col_model, cnorm,
                        g_ns, l_ns, sdim=3, terms=default_stix_option):
 
-    from petram.phys.common.rf_dispersion_coldplasma_numba import (epsilonr_pl_cold_g,
-                                                                   epsilonr_pl_cold_generic,)
+    from petram.phys.common.coldplasma import (epsilonr_pl_cold_g,
+                                               epsilonr_pl_cold_generic,)
 
     Da = 1.66053906660e-27      # atomic mass unit (u or Dalton) (kg)
 
@@ -186,7 +187,7 @@ def build_coefficients(ind_vars, omega, B, dens_e, t_e, dens_i, masses, charges,
 
     if col_model == 4:
         t_e_coeff = VCoeff(num_ions+1, [t_e, ], ind_vars, l, g,
-                       return_complex=False, return_mfem_constant=True)
+                           return_complex=False, return_mfem_constant=True)
     elif col_model == 0:
         t_e_coeff = mfem.ConstantCoefficient(0.0)
     else:
@@ -195,7 +196,6 @@ def build_coefficients(ind_vars, omega, B, dens_e, t_e, dens_i, masses, charges,
 
     dens_i_coeff = VCoeff(num_ions, [dens_i, ], ind_vars, l, g,
                           return_complex=False, return_mfem_constant=True)
-
 
     terms = value2flags(len(charges), terms)
     params = {'omega': omega, 'masses': masses, 'charges': charges,
@@ -217,7 +217,7 @@ def build_coefficients(ind_vars, omega, B, dens_e, t_e, dens_i, masses, charges,
     def sigma(ptx):
         return - 1j*omega * np.zeros((3, 3), dtype=np.complex128)*cnorm
 
-    #def nuei(ptx, dens_e, t_e, dens_i):
+    # def nuei(ptx, dens_e, t_e, dens_i):
     #    # iidx : index of ions
     #    nuei = f_collisions(dens_i, masses, charges, t_e, dens_e)
     #    return nuei[iidx]
@@ -237,7 +237,6 @@ def build_coefficients(ind_vars, omega, B, dens_e, t_e, dens_i, masses, charges,
     mfem_coeff2 = jitter2(mur)
     mfem_coeff3 = jitter2(sigma)
 
-
     coeff1 = NumbaCoefficient(mfem_coeff1)
     coeff2 = NumbaCoefficient(mfem_coeff2)
     coeff3 = NumbaCoefficient(mfem_coeff3)
@@ -247,8 +246,8 @@ def build_coefficients(ind_vars, omega, B, dens_e, t_e, dens_i, masses, charges,
                    for x in dependency3]
     jitter3 = mfem.jit.scalar(sdim=sdim, complex=False, params=params, debug=numba_debug,
                               dependency=dependency3)
-    #coeff5 = []
-    #for idx in range(len(masses)):
+    # coeff5 = []
+    # for idx in range(len(masses)):
     #    params['iidx'] = idx
     #    mfem_coeff5 = jitter3(nuei)
     #    coeff5.append(NumbaCoefficient(mfem_coeff5))
@@ -300,20 +299,20 @@ def build_variables(solvar, ss, ind_vars, omega, B, dens_e, t_e, dens_i, masses,
               'sterms': terms[1], 'use_eye3': np.int32(terms[0])}
 
     def epsilonr(*_ptx, B=None, dens_e=None, t_e=None, dens_i=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import epsilonr_pl_cold_generic
+        from petram.phys.common.coldplasma import epsilonr_pl_cold_generic
 
         out = -epsilon0 * omega * omega*epsilonr_pl_cold_generic(
             omega, B, dens_i, masses, charges, t_e, dens_e, sterms, use_eye3,  col_model)
         return out
 
     def sdp(*_ptx, B=None, dens_e=None, t_e=None, dens_i=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import epsilonr_pl_cold_g
+        from petram.phys.common.coldplasma import epsilonr_pl_cold_g
         out = epsilonr_pl_cold_g(
             omega, B, dens_i, masses, charges, t_e, dens_e, sterms, 1, col_model)
         return out
 
     def epsilonrac(*_ptx, B=None, dens_e=None, t_e=None, dens_i=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import epsilonr_pl_cold_generic
+        from petram.phys.common.coldplasma import epsilonr_pl_cold_generic
         out = -epsilon0 * omega * omega*epsilonr_pl_cold_generic(
             omega, B, dens_i, masses, charges, t_e, dens_e, sterms, use_eye3, col_model)
         return (out - out.transpose().conj())/2.0
@@ -329,7 +328,7 @@ def build_variables(solvar, ss, ind_vars, omega, B, dens_e, t_e, dens_i, masses,
         return - 1j*omega * np.zeros((3, 3), dtype=np.complex128)
 
     def nucols(*_ptx, B=None, dens_e=None, t_e=None, dens_i=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import f_collisions
+        from petram.phys.common.coldplasma import f_collisions
         if col_model == 4:
             nucols = t_e
         elif col_model == 3:
@@ -345,7 +344,6 @@ def build_variables(solvar, ss, ind_vars, omega, B, dens_e, t_e, dens_i, masses,
         else:
             nucols = np.zeros((len(masses)+1,))
         return nucols
-
 
     def fce(*_ptx, B=None, dens_e=None, t_e=None, dens_i=None):
         from petram.phys.common.rf_plasma_wc_wp import wce

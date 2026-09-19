@@ -143,9 +143,9 @@ def panelvalue2value(panelvalue):
 
 
 def make_functions(terms, cnorm):
-    from petram.phys.common.rf_dispersion_coldplasma_numba import (epsilonr_pl_cold_std,
+    from petram.phys.common.coldplasma import (epsilonr_pl_cold_std,
                                                                    f_collisions)
-    from petram.phys.common.rf_dispersion_lkplasma_numba import (epsilonr_pl_hot_std,
+    from petram.phys.common.lkplasma import (epsilonr_pl_hot_std,
                                                                  eval_npara_nperp,
                                                                  rotate_dielectric)
 
@@ -217,9 +217,9 @@ def make_function_variable(terms):
     '''
 
     def epsilonr(*ptx, B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import (epsilonr_pl_cold_std,
+        from petram.phys.common.coldplasma import (epsilonr_pl_cold_std,
                                                                        f_collisions)
-        from petram.phys.common.rf_dispersion_lkplasma_numba import (epsilonr_pl_hot_std,
+        from petram.phys.common.lkplasma import (epsilonr_pl_hot_std,
                                                                      eval_npara_nperp,
                                                                      rotate_dielectric,)
 
@@ -269,15 +269,15 @@ def make_function_variable(terms):
         return out
 
     def sdp(*_ptx,  B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import epsilonr_pl_cold_std
+        from petram.phys.common.coldplasma import epsilonr_pl_cold_std
 
         out = epsilonr_pl_cold_std(
             omega, B, dens_i, masses, charges, t_e, dens_e, col_model)
         return out
 
     def sdphot(*ptx,  B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import epsilonr_pl_cold_std
-        from petram.phys.common.rf_dispersion_lkplasma_numba import (epsilonr_pl_hot_std,
+        from petram.phys.common.coldplasma import epsilonr_pl_cold_std
+        from petram.phys.common.lkplasma import (epsilonr_pl_hot_std,
                                                                      eval_npara_nperp,
                                                                      rotate_dielectric,)
 
@@ -309,7 +309,7 @@ def make_function_variable(terms):
         return - 1j*omega * np.zeros((3, 3), dtype=np.complex128)
 
     def nucol(*_ptx, dens_e=None, t_c=None, dens_i=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import f_collisions
+        from petram.phys.common.coldplasma import f_collisions
 
         if col_model == 0:
             nucols = np.zeros((len(masses)+1,))
@@ -330,9 +330,9 @@ def make_function_variable(terms):
 
     def epsilonrac(*ptx, B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
         # component for collisional absorption
-        from petram.phys.common.rf_dispersion_coldplasma_numba import (epsilonr_pl_cold_std,
+        from petram.phys.common.coldplasma import (epsilonr_pl_cold_std,
                                                                        f_collisions)
-        from petram.phys.common.rf_dispersion_lkplasma_numba import (epsilonr_pl_hot_std,
+        from petram.phys.common.lkplasma import (epsilonr_pl_hot_std,
                                                                      eval_npara_nperp,
                                                                      rotate_dielectric,)
 
@@ -389,8 +389,8 @@ def make_function_variable(terms):
         return out
 
     def epsilonrae(*ptx, B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import epsilonr_pl_cold_std
-        from petram.phys.common.rf_dispersion_lkplasma_numba import (epsilonr_pl_hot_std,
+        from petram.phys.common.coldplasma import epsilonr_pl_cold_std
+        from petram.phys.common.lkplasma import (epsilonr_pl_hot_std,
                                                                      eval_npara_nperp,
                                                                      rotate_dielectric,)
 
@@ -418,8 +418,8 @@ def make_function_variable(terms):
         return out
 
     def epsilonrai(*ptx, B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import epsilonr_pl_cold_std
-        from petram.phys.common.rf_dispersion_lkplasma_numba import (epsilonr_pl_hot_std,
+        from petram.phys.common.coldplasma import epsilonr_pl_cold_std
+        from petram.phys.common.lkplasma import (epsilonr_pl_hot_std,
                                                                      eval_npara_nperp,
                                                                      rotate_dielectric,)
 
@@ -452,8 +452,8 @@ def make_function_variable(terms):
         return ret
 
     def npape(*ptx, B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import epsilonr_pl_cold_std
-        from petram.phys.common.rf_dispersion_lkplasma_numba import eval_npara_nperp
+        from petram.phys.common.coldplasma import epsilonr_pl_cold_std
+        from petram.phys.common.lkplasma import eval_npara_nperp
 
         e_cold = epsilonr_pl_cold_std(
             omega, B, dens_i, masses, charges, t_c, dens_e, col_model)
@@ -462,8 +462,8 @@ def make_function_variable(terms):
         return npape
 
     def lkframe(*ptx, B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
-        from petram.phys.common.rf_dispersion_coldplasma_numba import epsilonr_pl_cold_std
-        from petram.phys.common.rf_dispersion_lkplasma_numba import (epsilonr_pl_hot_std,
+        from petram.phys.common.coldplasma import epsilonr_pl_cold_std
+        from petram.phys.common.lkplasma import (epsilonr_pl_hot_std,
                                                                      eval_npara_nperp,
                                                                      rotate_dielectric,)
 
@@ -481,7 +481,7 @@ def make_function_variable(terms):
         return np.vstack((x, y, z))
 
     def fce(*_ptx,  B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
-        from petram.phys.common.rf_dispersion_lkplasma_numba import wce
+        from petram.phys.common.lkplasma import wce
 
         freq = omega/2/pi
         b_norm = sqrt(B[0]**2+B[1]**2+B[2]**2)
@@ -490,7 +490,7 @@ def make_function_variable(terms):
 
     def fci(*_ptx,  B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
         from petram.phys.phys_const import Da
-        from petram.phys.common.rf_dispersion_lkplasma_numba import wci
+        from petram.phys.common.lkplasma import wci
 
         freq = omega/2/pi
         fci = np.zeros(len(masses))
@@ -506,7 +506,7 @@ def make_function_variable(terms):
         return fci
 
     def fpe(*_ptx,  B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
-        from petram.phys.common.rf_dispersion_lkplasma_numba import wpesq
+        from petram.phys.common.lkplasma import wpesq
 
         freq = omega/2/pi
         fpe = sqrt(wpesq(dens_e, freq)*omega**2)/2/pi
@@ -514,7 +514,7 @@ def make_function_variable(terms):
 
     def fpi(*_ptx,  B=None, t_c=None, dens_e=None, t_e=None, dens_i=None, t_i=None, kpakpe=None, kpevec=None):
         from petram.phys.phys_const import Da
-        from petram.phys.common.rf_dispersion_lkplasma_numba import wpisq
+        from petram.phys.common.lkplasma import wpisq
 
         freq = omega/2/pi
         fpi = np.zeros(len(masses))
@@ -573,9 +573,9 @@ def build_coefficients(ind_vars, omega, B, t_c, dens_e, t_e, dens_i, t_i,
     kpevec_coeff = VCoeff(3, kpevec, ind_vars, l, g,
                           return_complex=False, return_mfem_constant=True)
 
-    import petram.phys.common.rf_dispersion_lkplasma_numba
+    import petram.phys.common.lkplasma
     kpe_alg = getattr(
-        petram.phys.common.rf_dispersion_lkplasma_numba, "eval_kpe_"+kpe_alg)
+        petram.phys.common.lkplasma, "eval_kpe_"+kpe_alg)
 
 
 
@@ -664,9 +664,9 @@ def build_variables(solvar, ss, ind_vars, omega, B, t_c, dens_e, t_e, dens_i, t_
     kpakpe_var = make_variable(kpakpe, dtype=np.float64)
     kpevec_var = make_variable(kpevec, dtype=np.float64)
 
-    import petram.phys.common.rf_dispersion_lkplasma_numba
+    import petram.phys.common.lkplasma
     kpe_alg = getattr(
-        petram.phys.common.rf_dispersion_lkplasma_numba, "eval_kpe_"+kpe_alg)
+        petram.phys.common.lkplasma, "eval_kpe_"+kpe_alg)
 
     col_model = col_model_options.index(col_model)
     params = {'omega': omega, 'masses': masses, 'charges': charges, 'nhrms': 20,

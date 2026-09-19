@@ -312,7 +312,7 @@ def epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model):
 def epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model):
     return call_epsilonr_pl_cold_g(w, B, denses, masses, charges, Te, ne, terms, use_eye3, col_model)
 
-@njit(complex128[:, :](float64[:], complex128[:, :]))
+@njit
 def rotate_dielectric(B, M):
     #
     #  B : magnetic field.
@@ -381,7 +381,7 @@ def jit_std_r(w, B, denses, masses, charges, Te, ne, col_model):
     if isinstance(Te, types.Array):
         def array_impl(w, B, denses, masses, charges, Te, ne, col_model):
             Te = Te.astype(np.float64)
-            return _epsilonr_pl_cold_std(w, B, denses, masses, charges, Te, ne, col_model)
+            return _epsilonr_pl_cold(w, B, denses, masses, charges, Te, ne, col_model)
         return array_impl
 
     # Check if input is a primitive numeric type
